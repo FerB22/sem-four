@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "978045615455",
+    "project_id": "semfour-ecd9b",
+    "storage_bucket": "semfour-ecd9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978045615455:android:c594e638a383d3e1f94aea",
+        "android_client_info": {
+          "package_name": "com.example.semfour"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "978045615455-l6digns0j2f6he6cv9telttkg5b7at0e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.semfour",
+            "certificate_hash": "43a26255045a3a4a9b465c3ae2d8d0a2cb67297e"
+          }
+        },
+        {
+          "client_id": "978045615455-94mmtn93s6qu2mjmm02q2bfvb71pvf28.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWFnP2er8BqKYXnXqsrZkTVbtJwxQEA8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "978045615455-8nl3j3um7t1u0h5khon4199n8smbse6g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

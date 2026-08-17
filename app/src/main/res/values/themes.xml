@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Temas para app Compose (NO usa Views/XML layouts).
+  El tema de Android se usa solo para:
+    1. La barra de estado / ventana del sistema
+    2. La Splash Screen (core-splashscreen)
+  Material3 se aplica EXCLUSIVAMENTE en Compose via SemFourTheme.kt
+-->
+<resources>
+
+    <!-- Tema base de la aplicación: NoActionBar + fondo oscuro -->
+    <style name="Theme.SemFour" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#0E1117</item>
+        <item name="android:statusBarColor">#0E1117</item>
+        <item name="android:navigationBarColor">#0E1117</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <!-- Splash Screen (androidx.core:core-splashscreen) -->
+    <style name="Theme.SemFour.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.SemFour</item>
+    </style>
+
+</resources>

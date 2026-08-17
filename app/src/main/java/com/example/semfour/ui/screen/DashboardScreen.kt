@@ -1,0 +1,656 @@
+package com.example.semfour.ui.screen
+
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.ColorUtils
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.semfour.data.local.entity.EvaluationEntity
+import com.example.semfour.data.local.entity.ScheduleEntity
+import com.example.semfour.data.local.entity.SubjectEntity
+import com.example.semfour.domain.algorithm.PrioritizedTopic
+import com.example.semfour.ui.viewmodel.DashboardViewModel
+import com.example.semfour.ui.viewmodel.SessionType
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.roundToInt
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel(),
+    onStartSession: (topicId: String, sessionType: String) -> Unit,
+    onOpenSubject: (subjectId: String) -> Unit
+) {
+    val topPriority by viewModel.topPriorityTopic.collectAsStateWithLifecycle()
+    val allTopics by viewModel.prioritizedTopics.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val todayMinutes by viewModel.todayMinutes.collectAsStateWithLifecycle()
+    val evaluations by viewModel.upcomingEvaluations.collectAsStateWithLifecycle()
+    val dueCount by viewModel.dueTodayCount.collectAsStateWithLifecycle()
+    val todaySchedule by viewModel.todaySchedule.collectAsStateWithLifecycle()
+
+    val subjectMap = remember(subjects) { subjects.associateBy { it.id } }
+
+    var evaluationToEdit by remember { mutableStateOf<EvaluationEntity?>(null) }
+    var showEvaluationDialog by remember { mutableStateOf(false) }
+
+    if (showEvaluationDialog) {
+        EvaluationFormDialog(
+            evaluationToEdit = evaluationToEdit,
+            subjects = subjects,
+            onSave = { eval -> viewModel.saveEvaluation(eval) },
+            onDelete = { eval -> viewModel.deleteEvaluation(eval) },
+            onDismiss = {
+                showEvaluationDialog = false
+                evaluationToEdit = null
+            }
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
+        // ── Header ───────────────────────────────────────────────────────────
+        item {
+            DashboardHeader(todayMinutes = todayMinutes, dueCount = dueCount)
+        }
+
+        // ── Tarjeta Prioritaria ──────────────────────────────────────────────
+        item {
+            topPriority?.let { priority ->
+                val subject = subjectMap[priority.topic.subjectId]
+                PriorityTopicCard(
+                    prioritizedTopic = priority,
+                    subject = subject,
+                    onStartMicro = {
+                        onStartSession(priority.topic.id, SessionType.MICRO.name)
+                    },
+                    onStartPomodoro = {
+                        onStartSession(priority.topic.id, SessionType.POMODORO.name)
+                    }
+                )
+            }
+        }
+
+        // ── Clases de Hoy (si hay clases programadas) ─────────────────────────
+        if (todaySchedule.isNotEmpty()) {
+            item {
+                TodayClassesSection(
+                    classes = todaySchedule,
+                    subjectMap = subjectMap,
+                    onSubjectClick = onOpenSubject
+                )
+            }
+        }
+
+        // ── Chips de Asignaturas ─────────────────────────────────────────────
+        item {
+            SubjectChipsRow(subjects = subjects, onSubjectClick = onOpenSubject)
+        }
+
+        // ── Próximas evaluaciones ────────────────────────────────────────────
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "📅 Próximas evaluaciones",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                FilledTonalButton(
+                    onClick = {
+                        evaluationToEdit = null
+                        showEvaluationDialog = true
+                    },
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Añadir", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        if (evaluations.isNotEmpty()) {
+            items(evaluations, key = { it.id }) { eval ->
+                EvaluationCard(
+                    evaluation = eval,
+                    subjectMap = subjectMap,
+                    onEditClick = {
+                        evaluationToEdit = eval
+                        showEvaluationDialog = true
+                    }
+                )
+            }
+        } else {
+            item {
+                Text(
+                    "No hay evaluaciones registradas. Toca «Añadir» para registrar una.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        // ── Cola de temas del día ────────────────────────────────────────────
+        item {
+            Text(
+                "📚 Cola de repaso (${allTopics.size} temas)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+        items(allTopics.drop(1).take(5), key = { it.topic.id }) { priority ->
+            val subject = subjectMap[priority.topic.subjectId]
+            TopicQueueItem(
+                prioritizedTopic = priority,
+                subject = subject,
+                onStart = { onStartSession(priority.topic.id, SessionType.MICRO.name) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TodayClassesSection(
+    classes: List<ScheduleEntity>,
+    subjectMap: Map<String, SubjectEntity>,
+    onSubjectClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+    ) {
+        Text(
+            "🕒 Clases de hoy",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            classes.forEach { scheduleItem ->
+                val subject = subjectMap[scheduleItem.subjectId]
+                val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+                Card(
+                    onClick = { subject?.let { onSubjectClick(it.id) } },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.width(170.dp)
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "${scheduleItem.startTime} - ${scheduleItem.endTime}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = color,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = subject?.nombre ?: "Asignatura",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = scheduleItem.room,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardHeader(todayMinutes: Int, dueCount: Int) {
+    val cal = Calendar.getInstance()
+    val hora = cal.get(Calendar.HOUR_OF_DAY)
+    val saludo = when {
+        hora < 12 -> "Buenos días 🌅"
+        hora < 18 -> "Buenas tardes ☀️"
+        else -> "Buenas noches 🌙"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            )
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = saludo,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "4.º Semestre",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Stat chip minutos hoy
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Timer,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "$todayMinutes min hoy",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PriorityTopicCard(
+    prioritizedTopic: PrioritizedTopic,
+    subject: SubjectEntity?,
+    onStartMicro: () -> Unit,
+    onStartPomodoro: () -> Unit
+) {
+    val subjectColor = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+    val scorePercent = (prioritizedTopic.score * 100).roundToInt()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            // Fila superior: Chip Prioridad + Nivel Confianza
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = subjectColor.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(subjectColor)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "PRIORIDAD N.º 1 • $scorePercent %",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = subjectColor
+                        )
+                    }
+                }
+
+                // Estrellas de confianza
+                ConfidenceStars(nivel = prioritizedTopic.topic.nivelConfianza)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Nombre de la asignatura
+            Text(
+                text = subject?.nombre ?: "Asignatura",
+                style = MaterialTheme.typography.labelMedium,
+                color = subjectColor,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            // Nombre del tema
+            Text(
+                text = prioritizedTopic.topic.nombre,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Indicador de estado SM-2
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val (statusText, statusColor) = when {
+                    prioritizedTopic.estaVencido -> "Repaso vencido" to MaterialTheme.colorScheme.error
+                    prioritizedTopic.esNuevo -> "Tema nuevo" to MaterialTheme.colorScheme.primary
+                    else -> "Próximo repaso al día" to MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Text(
+                    text = "● $statusText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = statusColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Botones de acción
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onStartMicro,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Bolt, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Micro (5 min)", fontSize = 13.sp)
+                }
+
+                Button(
+                    onClick = onStartPomodoro,
+                    modifier = Modifier.weight(1.2f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = subjectColor)
+                ) {
+                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Pomodoro", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfidenceStars(nivel: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        for (i in 1..5) {
+            Icon(
+                imageVector = if (i <= nivel) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (i <= nivel) Color(0xFFFFD54F) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubjectChipsRow(
+    subjects: List<SubjectEntity>,
+    onSubjectClick: (String) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(subjects, key = { it.id }) { subject ->
+            val color = parseHexColor(subject.color)
+            FilterChip(
+                selected = false,
+                onClick = { onSubjectClick(subject.id) },
+                label = { Text(subject.codigo, fontWeight = FontWeight.SemiBold) },
+                leadingIcon = {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                },
+                shape = RoundedCornerShape(10.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun EvaluationCard(
+    evaluation: EvaluationEntity,
+    subjectMap: Map<String, SubjectEntity>,
+    onEditClick: () -> Unit
+) {
+    val subject = subjectMap[evaluation.subjectId]
+    val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+
+    val esIndeterminada = evaluation.fechaEval <= 0L
+    val diasRestantes = if (!esIndeterminada) {
+        ((evaluation.fechaEval - System.currentTimeMillis()) / (86_400_000L)).toInt()
+    } else 0
+
+    val diasTexto = when {
+        esIndeterminada -> "Por definir"
+        diasRestantes < 0 -> "Venció"
+        diasRestantes == 0 -> "¡Hoy!"
+        diasRestantes == 1 -> "Mañana"
+        else -> "En $diasRestantes días"
+    }
+
+    val badgeBgColor = when {
+        esIndeterminada -> MaterialTheme.colorScheme.surfaceVariant
+        diasRestantes <= 2 -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val badgeTextColor = when {
+        esIndeterminada -> MaterialTheme.colorScheme.onSurfaceVariant
+        diasRestantes <= 2 -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (esIndeterminada) 0.45f else 0.7f)
+        ),
+        onClick = onEditClick
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (esIndeterminada) color.copy(alpha = 0.4f) else color)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = subject?.nombre ?: "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (esIndeterminada) MaterialTheme.colorScheme.onSurfaceVariant else color,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = evaluation.nombre,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Surface(
+                color = badgeBgColor,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = diasTexto,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeTextColor
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            IconButton(
+                onClick = onEditClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar evaluación",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopicQueueItem(
+    prioritizedTopic: PrioritizedTopic,
+    subject: SubjectEntity?,
+    onStart: () -> Unit
+) {
+    val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+
+    ListItem(
+        headlineContent = {
+            Text(prioritizedTopic.topic.nombre, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = {
+            Text(
+                subject?.nombre ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = color
+            )
+        },
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "${(prioritizedTopic.score * 100).roundToInt()}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = color,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onStart) {
+                Icon(Icons.Default.PlayArrow, "Estudiar", tint = color)
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .clickable { onStart() }
+    )
+}
+
+// ── Utilidades ────────────────────────────────────────────────────────────────
+
+fun parseHexColor(hex: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(hex))
+    } catch (e: Exception) {
+        Color.Gray
+    }
+}
+
+fun confidenceColor(nivel: Int): Color = when (nivel) {
+    1 -> Color(0xFFFF6B6B)
+    2 -> Color(0xFFFFA726)
+    3 -> Color(0xFFFFD54F)
+    4 -> Color(0xFF81C784)
+    5 -> Color(0xFF4CAF50)
+    else -> Color.Gray
+}
