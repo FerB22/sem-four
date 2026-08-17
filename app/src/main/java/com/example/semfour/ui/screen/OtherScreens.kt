@@ -1285,7 +1285,7 @@ fun SettingsScreen(
                             onClick = {
                                 val intent = android.content.Intent(
                                     android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://github.com")
+                                    android.net.Uri.parse("https://github.com/FerB22/sem-four/releases/latest")
                                 )
                                 context.startActivity(intent)
                             },
@@ -1303,7 +1303,7 @@ fun SettingsScreen(
                             onClick = {
                                 val intent = android.content.Intent(
                                     android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://github.com")
+                                    android.net.Uri.parse("https://github.com/FerB22/sem-four")
                                 )
                                 context.startActivity(intent)
                             },
