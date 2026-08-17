@@ -801,12 +801,21 @@ fun SettingsScreen(
     val exp2Enabled by viewModel.exp2Enabled.collectAsStateWithLifecycle()
     val exp3Enabled by viewModel.exp3Enabled.collectAsStateWithLifecycle()
     val englishEnabled by viewModel.englishEnabled.collectAsStateWithLifecycle()
+    val attendanceRemindersEnabled by viewModel.attendanceRemindersEnabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val dateFormat = remember { java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault()) }
     var showGuideDialog by remember { mutableStateOf(false) }
 
     if (showGuideDialog) {
         AppGuideDialog(onDismiss = { showGuideDialog = false })
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            // Usuario denegó permiso
+        }
     }
 
     // Launcher de Activity nativo para Google Sign-In con selección de cuentas
@@ -959,6 +968,71 @@ fun SettingsScreen(
                             Switch(
                                 checked = englishEnabled,
                                 onCheckedChange = { viewModel.toggleEnglish(it) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Sección: Notificaciones de Asistencia ──
+            item {
+                Text(
+                    "NOTIFICACIONES Y ASISTENCIA",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Recordatorios de asistencia",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Notificar a los 30 min de haber iniciado cada clase para registrar asistencia",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Switch(
+                                checked = attendanceRemindersEnabled,
+                                onCheckedChange = { isChecked ->
+                                    if (isChecked && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    viewModel.toggleAttendanceReminders(isChecked)
+                                }
                             )
                         }
                     }

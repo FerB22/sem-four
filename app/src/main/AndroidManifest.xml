@@ -5,8 +5,13 @@
     <!-- Permisos de red para Google Drive sync -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Para reprogramar WorkManager sync al reiniciar el dispositivo -->
+    <!-- Para reprogramar alarmas y WorkManager sync al reiniciar el dispositivo -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Permiso de notificaciones (Android 13+ / API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Permisos para alarmas exactas de asistencia (+30 min) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:name=".SemFourApplication"
@@ -77,6 +82,22 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/weekly_schedule_widget_info" />
+        </receiver>
+
+        <!-- Receiver para disparar la notificación de asistencia a los 30 min -->
+        <receiver
+            android:name=".notification.AttendanceNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Receiver para reprogramar alarmas al encender o reiniciar el teléfono -->
+        <receiver
+            android:name=".notification.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
         </receiver>
 
     </application>

@@ -28,7 +28,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val authService: GoogleAuthService,
     private val syncRepository: SyncRepository,
-    private val studyRepository: StudyRepository
+    private val studyRepository: StudyRepository,
+    private val attendanceScheduler: com.example.semfour.notification.AttendanceScheduler
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authService.authState
@@ -43,6 +44,9 @@ class SettingsViewModel @Inject constructor(
     private val _englishEnabled = MutableStateFlow(false)
     val englishEnabled: StateFlow<Boolean> = _englishEnabled.asStateFlow()
 
+    private val _attendanceRemindersEnabled = MutableStateFlow(true)
+    val attendanceRemindersEnabled: StateFlow<Boolean> = _attendanceRemindersEnabled.asStateFlow()
+
     private val _uiEvents = MutableSharedFlow<String>()
     val uiEvents: SharedFlow<String> = _uiEvents.asSharedFlow()
 
@@ -55,6 +59,21 @@ class SettingsViewModel @Inject constructor(
             _exp2Enabled.value = studyRepository.isExperienceEnabled(2)
             _exp3Enabled.value = studyRepository.isExperienceEnabled(3)
             _englishEnabled.value = studyRepository.isEnglishEnabled()
+            _attendanceRemindersEnabled.value = attendanceScheduler.isAttendanceRemindersEnabled()
+        }
+    }
+
+    fun toggleAttendanceReminders(enabled: Boolean) {
+        viewModelScope.launch {
+            attendanceScheduler.setAttendanceRemindersEnabled(enabled)
+            _attendanceRemindersEnabled.value = enabled
+            if (enabled) {
+                attendanceScheduler.scheduleAllFromDatabase()
+            } else {
+                attendanceScheduler.cancelAllFromDatabase()
+            }
+            val accion = if (enabled) "activados (+30 min tras iniciar clase)" else "desactivados"
+            _uiEvents.emit("Recordatorios de asistencia $accion")
         }
     }
 
@@ -62,6 +81,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             studyRepository.setEnglishEnabled(enabled)
             _englishEnabled.value = enabled
+            attendanceScheduler.scheduleAllFromDatabase()
             val accion = if (enabled) "añadida con éxito" else "removida"
             _uiEvents.emit("Asignatura Inglés Intermedio 1 $accion")
         }
