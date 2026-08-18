@@ -1,3 +1,5 @@
+@file:Suppress("RestrictedApi")
+
 package com.example.semfour.widget
 
 import android.content.Context
@@ -19,7 +21,6 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.*
 import androidx.glance.state.GlanceStateDefinition
@@ -27,11 +28,12 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.example.semfour.MainActivity
 import com.example.semfour.data.local.StudyPlanCatalog
 import com.example.semfour.ui.viewmodel.DashboardViewModel
 
-private fun glanceColor(color: Color): ColorProvider = ColorProvider(day = color, night = color)
+private fun glanceColor(color: Color): ColorProvider = ColorProvider(color)
 
 data class WidgetPlanTask(
     val id: String,
