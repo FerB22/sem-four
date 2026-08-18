@@ -212,7 +212,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                                     if (task.isCompleted) Color(0xFF64748B) else Color(0xFF0F172A)
                                 ),
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Bold
                             ),
                             maxLines = 1
                         )
