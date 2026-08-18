@@ -442,7 +442,9 @@ private fun DashboardHeader(
     }
 
     val nextClass = remember(todaySchedule) { todaySchedule.firstOrNull() }
-    val nextClassSubject = nextClass?.let { subjectMap[it.subjectId]?.nombre } ?: ""
+    val nextClassSubject = nextClass?.let { subjectMap[it.subjectId] }
+    val nextClassColor = nextClassSubject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+    val remainingClassesCount = (todaySchedule.size - 1).coerceAtLeast(0)
 
     Column(
         modifier = Modifier
@@ -450,101 +452,42 @@ private fun DashboardHeader(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
                         MaterialTheme.colorScheme.background
                     )
                 )
             )
-            .padding(horizontal = 20.dp, vertical = 14.dp)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = saludo,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "4.º Semestre",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+        // ── 1. Saludo y Título Limpio (sin apretujar) ─────────────────────────
+        Text(
+            text = saludo,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "4.º Semestre",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (todaySchedule.isNotEmpty()) {
-                    Surface(
-                        onClick = onOpenClasses,
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        tonalElevation = 2.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "${todaySchedule.size} clases",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
+        Spacer(Modifier.height(14.dp))
 
-                // Stat chip minutos hoy
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Timer,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = "$todayMinutes min hoy",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-
-        // Micro-banner si hay clases hoy (delgado e interactivo)
+        // ── 2. Tarjeta de Próxima Clase (con pista de más clases) ─────────────
         if (nextClass != null) {
-            Spacer(Modifier.height(10.dp))
             Surface(
                 onClick = onOpenClasses,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 color = Color.White,
                 border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -554,34 +497,126 @@ private fun DashboardHeader(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(7.dp)
+                                .size(8.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(nextClassColor)
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Próxima clase",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF64748B),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "${nextClass.startTime} - ${nextClass.endTime}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = nextClassColor
+                                )
+                            }
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "${nextClassSubject?.nombre ?: "Clase"} • ${nextClass.room}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (remainingClassesCount > 0) "+$remainingClassesCount más" else "Horario",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "Ver horario",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+        }
+
+        // ── 3. Rectángulo de Minutos de Estudio Hoy (debajo de las clases) ─────
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    ) {
+                        Box(modifier = Modifier.padding(6.dp)) {
+                            Icon(
+                                Icons.Default.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column {
                         Text(
-                            text = "Próx: ${nextClass.startTime} $nextClassSubject",
+                            text = "Tiempo de estudio hoy",
                             style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = if (todayMinutes > 0) "$todayMinutes minutos completados" else "0 minutos registrados",
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "• ${nextClass.room}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF64748B),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    Icon(
-                        Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Ver horario",
-                        tint = Color(0xFF64748B),
-                        modifier = Modifier.size(18.dp)
-                    )
+                }
+
+                if (dueCount > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            text = "$dueCount pendientes",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }
