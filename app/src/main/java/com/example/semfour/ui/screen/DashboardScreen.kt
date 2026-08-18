@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.semfour.data.local.entity.EvaluationEntity
@@ -64,6 +65,27 @@ fun DashboardScreen(
     var showClassesBottomSheet by remember { mutableStateOf(false) }
     var showAllEvaluations by remember { mutableStateOf(false) }
     var showFullTopicQueue by remember { mutableStateOf(false) }
+
+    // Evaluaciones memoizadas
+    val confirmedEvals = remember(evaluations) {
+        evaluations.filter { it.fechaEval > 0L }.sortedBy { it.fechaEval }
+    }
+    val undeterminedEvals = remember(evaluations) {
+        evaluations.filter { it.fechaEval == 0L }
+    }
+    val sortedEvaluations = remember(confirmedEvals, undeterminedEvals) {
+        confirmedEvals + undeterminedEvals
+    }
+    val displayedEvaluations = remember(sortedEvaluations, showAllEvaluations, confirmedEvals) {
+        if (showAllEvaluations) sortedEvaluations
+        else (if (confirmedEvals.isNotEmpty()) confirmedEvals.take(2) else sortedEvaluations.take(2))
+    }
+
+    // Cola de repaso memoizada
+    val queueTopics = remember(allTopics) { allTopics.drop(1) }
+    val displayedQueue = remember(queueTopics, showFullTopicQueue) {
+        if (showFullTopicQueue) queueTopics else queueTopics.take(3)
+    }
 
     if (showClassesBottomSheet) {
         TodayClassesBottomSheet(
@@ -150,20 +172,6 @@ fun DashboardScreen(
         }
 
         // ── 5. Próximas evaluaciones (Límite temporal + Colapsable) ───────────
-        val confirmedEvals = remember(evaluations) {
-            evaluations.filter { it.fechaEval > 0L }.sortedBy { it.fechaEval }
-        }
-        val undeterminedEvals = remember(evaluations) {
-            evaluations.filter { it.fechaEval == 0L }
-        }
-        val sortedEvaluations = remember(confirmedEvals, undeterminedEvals) {
-            confirmedEvals + undeterminedEvals
-        }
-        val displayedEvaluations = remember(sortedEvaluations, showAllEvaluations, confirmedEvals) {
-            if (showAllEvaluations) sortedEvaluations
-            else (if (confirmedEvals.isNotEmpty()) confirmedEvals.take(2) else sortedEvaluations.take(2))
-        }
-
         item(contentType = "evaluations_header") {
             Row(
                 modifier = Modifier
@@ -250,11 +258,6 @@ fun DashboardScreen(
         }
 
         // ── 6. Cola de repaso (Top 3 temas + Expansión) ──────────────────────
-        val queueTopics = remember(allTopics) { allTopics.drop(1) }
-        val displayedQueue = remember(queueTopics, showFullTopicQueue) {
-            if (showFullTopicQueue) queueTopics else queueTopics.take(3)
-        }
-
         if (queueTopics.isNotEmpty()) {
             item(contentType = "queue_header") {
                 Row(
