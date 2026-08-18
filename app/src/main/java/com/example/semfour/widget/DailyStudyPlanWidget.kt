@@ -98,8 +98,8 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(Color(0xFFFFFFFF))
-                .cornerRadius(18.dp)
-                .padding(10.dp)
+                .cornerRadius(16.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .clickable(actionStartActivity<MainActivity>()),
             contentAlignment = Alignment.TopStart
         ) {
@@ -137,16 +137,18 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     }
                 }
 
-                Spacer(modifier = GlanceModifier.height(6.dp))
+                Spacer(modifier = GlanceModifier.height(4.dp))
 
-                // Lista de Cuadernos .ipynb a estudiar hoy
+                // Lista de Cuadernos .ipynb a estudiar hoy (Column directa para máxima compatibilidad con todos los launchers)
                 if (tasks.isNotEmpty()) {
-                    LazyColumn(
-                        modifier = GlanceModifier.fillMaxSize()
+                    Column(
+                        modifier = GlanceModifier.fillMaxWidth()
                     ) {
-                        items(tasks) { task ->
+                        tasks.take(2).forEachIndexed { index, task ->
+                            if (index > 0) {
+                                Spacer(modifier = GlanceModifier.height(3.dp))
+                            }
                             TaskRowItem(task)
-                            Spacer(modifier = GlanceModifier.height(4.dp))
                         }
                     }
                 } else {
@@ -155,7 +157,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "🎉 ¡Sin cuadernos para hoy! Día libre.",
+                            text = "🎉 ¡Sin cuadernos hoy! Día libre.",
                             style = TextStyle(
                                 color = glanceColor(Color(0xFF64748B)),
                                 fontSize = 10.sp
