@@ -221,15 +221,7 @@ private fun MainPagerScreen(navController: NavController) {
                         onClick = {
                             if (pagerState.currentPage != index) {
                                 coroutineScope.launch {
-                                    val diff = kotlin.math.abs(pagerState.currentPage - index)
-                                    if (diff > 1) {
-                                        pagerState.scrollToPage(index)
-                                    } else {
-                                        pagerState.animateScrollToPage(
-                                            page = index,
-                                            animationSpec = tween(220, easing = EaseOutCubic)
-                                        )
-                                    }
+                                    pagerState.scrollToPage(index)
                                 }
                             }
                         },
@@ -244,7 +236,7 @@ private fun MainPagerScreen(navController: NavController) {
         HorizontalPager(
             state = pagerState,
             key = { it },
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 2,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
