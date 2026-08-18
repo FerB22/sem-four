@@ -31,7 +31,7 @@ class WidgetDataManager @Inject constructor(
                 if (prioritizedTopic != null) {
                     prefs[StudyPriorityWidget.KEY_TOPIC_NAME] = prioritizedTopic.topic.nombre
                     prefs[StudyPriorityWidget.KEY_SUBJECT_NAME] = subjectName
-                    prefs[StudyPriorityWidget.KEY_PRIORITY_SCORE] = (prioritizedTopic.score * 100).roundToInt()
+                    prefs[StudyPriorityWidget.KEY_PRIORITY_SCORE] = (prioritizedTopic.score * 100).roundToInt().coerceIn(0, 100)
                     prefs[StudyPriorityWidget.KEY_CONFIDENCE] = prioritizedTopic.topic.nivelConfianza
                 }
                 prefs[StudyPriorityWidget.KEY_NEXT_CLASS] = nextClass

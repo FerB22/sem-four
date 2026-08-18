@@ -60,7 +60,7 @@ object PriorityEngine {
             val scoreConfianza = calcularScoreConfianza(topic.nivelConfianza)
             val scoreUrgencia = urgenciaPorAsignatura[topic.subjectId] ?: 0.0
 
-            val scoreFinal = W_SM2 * scoreSM2 + W_CONFIANZA * scoreConfianza + W_URGENCIA * scoreUrgencia
+            val scoreFinal = (W_SM2 * scoreSM2 + W_CONFIANZA * scoreConfianza + W_URGENCIA * scoreUrgencia).coerceIn(0.0, 1.0)
 
             PrioritizedTopic(
                 topic = topic,
@@ -83,12 +83,12 @@ object PriorityEngine {
 
         val diasVencido = max(0.0, (ahora - topic.proximoRepaso).toDouble() / MS_POR_DIA)
         // tanh(x/7): llega a 0.9 a los ~14 días, se satura progresivamente
-        return Math.tanh(diasVencido / 7.0)
+        return Math.tanh(diasVencido / 7.0).coerceIn(0.0, 1.0)
     }
 
     /** Score de confianza inverso: menor confianza = mayor prioridad */
     private fun calcularScoreConfianza(nivelConfianza: Int): Double {
-        return (6 - nivelConfianza.coerceIn(1, 5)) / 5.0
+        return ((6 - nivelConfianza.coerceIn(1, 5)) / 5.0).coerceIn(0.0, 1.0)
     }
 
     /** Calcula días que lleva vencido un tema (negativo si aún no vence) */
@@ -98,22 +98,22 @@ object PriorityEngine {
 
     /**
      * Pre-calcula la urgencia máxima para cada asignatura basándose en
-     * sus evaluaciones próximas no completadas.
+     * sus evaluaciones próximas no completadas con fecha definida.
      */
     private fun calcularUrgenciasPorAsignatura(
         evaluaciones: List<EvaluationEntity>,
         ahora: Long
     ): Map<String, Double> {
         return evaluaciones
-            .filter { !it.completada }
+            .filter { !it.completada && it.fechaEval > 0L }
             .groupBy { it.subjectId }
             .mapValues { (_, evals) ->
-                evals.maxOf { eval ->
+                evals.maxOfOrNull { eval ->
                     val diasRestantes = (eval.fechaEval - ahora).toDouble() / MS_POR_DIA
-                    // Urgencia = 100% si ya pasó, 0% si faltan 14+ días
-                    // Ponderada por el peso de la evaluación
-                    max(0.0, 1.0 - diasRestantes / VENTANA_URGENCIA_DIAS) * eval.ponderacion
-                }
+                    // Urgencia = 1.0 si es hoy o ya pasó, 0.0 si faltan 14+ días
+                    val urgencia = (1.0 - (diasRestantes / VENTANA_URGENCIA_DIAS)).coerceIn(0.0, 1.0)
+                    urgencia * eval.ponderacion
+                } ?: 0.0
             }
     }
 }
