@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.*
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -18,6 +19,7 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.*
 import androidx.glance.state.GlanceStateDefinition
@@ -107,7 +109,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "📖 ESTUDIO DE HOY",
                         style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF0F172A)),
+                            color = ColorProvider(Color(0xFF0F172A)),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -124,7 +126,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = "Semana $week • $dayName",
                             style = TextStyle(
-                                color = androidx.glance.unit.ColorProvider(Color(0xFFFFFFFF)),
+                                color = ColorProvider(Color(0xFFFFFFFF)),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -152,7 +154,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = "🎉 ¡Sin cuadernos para hoy! Día libre.",
                             style = TextStyle(
-                                color = androidx.glance.unit.ColorProvider(Color(0xFF64748B)),
+                                color = ColorProvider(Color(0xFF64748B)),
                                 fontSize = 10.sp
                             )
                         )
@@ -165,8 +167,8 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
     @Composable
     private fun TaskRowItem(task: WidgetPlanTask) {
         val subjectColor = try {
-            Color(android.graphics.Color.parseColor(task.colorHex))
-        } catch (e: Exception) {
+            Color(task.colorHex.toColorInt())
+        } catch (_: Exception) {
             Color(0xFF3B82F6)
         }
 
@@ -198,7 +200,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                             Text(
                                 text = task.subjectCode,
                                 style = TextStyle(
-                                    color = androidx.glance.unit.ColorProvider(subjectColor),
+                                    color = ColorProvider(subjectColor),
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -208,7 +210,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = task.subjectName,
                             style = TextStyle(
-                                color = androidx.glance.unit.ColorProvider(
+                                color = ColorProvider(
                                     if (task.isCompleted) Color(0xFF64748B) else Color(0xFF0F172A)
                                 ),
                                 fontSize = 10.sp,
@@ -223,7 +225,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "📄 ${task.notebookFile}",
                         style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(
+                            color = ColorProvider(
                                 if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF475569)
                             ),
                             fontSize = 9.sp
@@ -237,7 +239,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "✓",
                         style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF22C55E)),
+                            color = ColorProvider(Color(0xFF22C55E)),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
