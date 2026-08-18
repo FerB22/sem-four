@@ -145,56 +145,24 @@ class StudyPriorityWidget : GlanceAppWidget() {
 
                 Spacer(modifier = GlanceModifier.defaultWeight())
 
-                // Bottom: Next Class / Action Button
-                if (nextClass.isNotBlank()) {
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF8FAFC))
-                            .cornerRadius(8.dp)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🏫 Próx: $nextClass",
-                            maxLines = 1,
-                            style = TextStyle(
-                                color = androidx.glance.unit.ColorProvider(Color(0xFF475569)),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                // Bottom: Action Button
+                Row(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF0F172A))
+                        .cornerRadius(8.dp)
+                        .padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "⚡ Toca para estudiar 5 min",
+                        style = TextStyle(
+                            color = androidx.glance.unit.ColorProvider(Color(0xFFFFFFFF)),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        if (nextClassRoom.isNotBlank()) {
-                            Spacer(modifier = GlanceModifier.width(4.dp))
-                            Text(
-                                text = "[$nextClassRoom]",
-                                style = TextStyle(
-                                    color = androidx.glance.unit.ColorProvider(Color(0xFF0F172A)),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF0F172A))
-                            .cornerRadius(8.dp)
-                            .padding(vertical = 6.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "⚡ Toca para estudiar 5 min",
-                            style = TextStyle(
-                                color = androidx.glance.unit.ColorProvider(Color(0xFFFFFFFF)),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
+                    )
                 }
             }
         }
