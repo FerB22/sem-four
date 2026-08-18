@@ -30,7 +30,8 @@ import androidx.glance.text.TextStyle
 import com.example.semfour.MainActivity
 import com.example.semfour.data.local.StudyPlanCatalog
 import com.example.semfour.ui.viewmodel.DashboardViewModel
-import java.util.Calendar
+
+private fun glanceColor(color: Color): ColorProvider = ColorProvider(day = color, night = color)
 
 data class WidgetPlanTask(
     val id: String,
@@ -109,7 +110,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "📖 ESTUDIO DE HOY",
                         style = TextStyle(
-                            color = ColorProvider(Color(0xFF0F172A)),
+                            color = glanceColor(Color(0xFF0F172A)),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -126,7 +127,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = "Semana $week • $dayName",
                             style = TextStyle(
-                                color = ColorProvider(Color(0xFFFFFFFF)),
+                                color = glanceColor(Color(0xFFFFFFFF)),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -154,7 +155,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = "🎉 ¡Sin cuadernos para hoy! Día libre.",
                             style = TextStyle(
-                                color = ColorProvider(Color(0xFF64748B)),
+                                color = glanceColor(Color(0xFF64748B)),
                                 fontSize = 10.sp
                             )
                         )
@@ -200,7 +201,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                             Text(
                                 text = task.subjectCode,
                                 style = TextStyle(
-                                    color = ColorProvider(subjectColor),
+                                    color = glanceColor(subjectColor),
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -210,7 +211,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         Text(
                             text = task.subjectName,
                             style = TextStyle(
-                                color = ColorProvider(
+                                color = glanceColor(
                                     if (task.isCompleted) Color(0xFF64748B) else Color(0xFF0F172A)
                                 ),
                                 fontSize = 10.sp,
@@ -225,7 +226,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "📄 ${task.notebookFile}",
                         style = TextStyle(
-                            color = ColorProvider(
+                            color = glanceColor(
                                 if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF475569)
                             ),
                             fontSize = 9.sp
@@ -239,7 +240,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Text(
                         text = "✓",
                         style = TextStyle(
-                            color = ColorProvider(Color(0xFF22C55E)),
+                            color = glanceColor(Color(0xFF22C55E)),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
