@@ -38,15 +38,19 @@ fun ScheduleScreen(
 
     var selectedDay by remember { mutableIntStateOf(if (currentDay in 1..5) currentDay else 1) }
 
-    val days = listOf(
-        1 to "Lunes",
-        2 to "Martes",
-        3 to "Miércoles",
-        4 to "Jueves",
-        5 to "Viernes"
-    )
+    val days = remember {
+        listOf(
+            1 to "Lunes",
+            2 to "Martes",
+            3 to "Miércoles",
+            4 to "Jueves",
+            5 to "Viernes"
+        )
+    }
 
-    val daySchedule = allSchedule.filter { it.dayOfWeek == selectedDay }
+    val daySchedule = remember(allSchedule, selectedDay) {
+        allSchedule.filter { it.dayOfWeek == selectedDay }
+    }
 
     Scaffold(
         topBar = {

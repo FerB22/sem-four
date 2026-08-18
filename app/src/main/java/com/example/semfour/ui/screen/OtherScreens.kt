@@ -36,6 +36,10 @@ fun SubjectsScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val prioritizedTopics by viewModel.prioritizedTopics.collectAsStateWithLifecycle()
 
+    val topicsBySubject = remember(prioritizedTopics) {
+        prioritizedTopics.groupBy { it.topic.subjectId }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Mis asignaturas", fontWeight = FontWeight.Bold) })
@@ -47,7 +51,7 @@ fun SubjectsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(subjects, key = { it.id }) { subject ->
-                val topicsForSubject = prioritizedTopics.filter { it.topic.subjectId == subject.id }
+                val topicsForSubject = topicsBySubject[subject.id] ?: emptyList()
                 val avgConfianza = if (topicsForSubject.isNotEmpty())
                     topicsForSubject.map { it.topic.nivelConfianza }.average() else 0.0
                 val pendingCount = topicsForSubject.count { it.estaVencido || it.esNuevo }

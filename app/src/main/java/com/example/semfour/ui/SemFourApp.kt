@@ -69,16 +69,16 @@ fun SemFourApp() {
         navController = navController,
         startDestination = Screen.Main.route,
         enterTransition = {
-            fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing))
+            fadeIn(animationSpec = tween(220, easing = EaseOutCubic))
         },
         exitTransition = {
-            fadeOut(animationSpec = tween(200, easing = FastOutSlowInEasing))
+            fadeOut(animationSpec = tween(160, easing = EaseInCubic))
         },
         popEnterTransition = {
-            fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing))
+            fadeIn(animationSpec = tween(220, easing = EaseOutCubic))
         },
         popExitTransition = {
-            fadeOut(animationSpec = tween(200, easing = FastOutSlowInEasing))
+            fadeOut(animationSpec = tween(160, easing = EaseInCubic))
         }
     ) {
         // ── Pantalla Principal con Pager y Swipe Horizontal ──
@@ -91,16 +91,16 @@ fun SemFourApp() {
             route = Screen.SubjectDetail().route,
             arguments = listOf(navArgument("subjectId") { type = NavType.StringType }),
             enterTransition = {
-                slideInHorizontally(tween(350, easing = EaseOutCubic)) { it / 3 } + fadeIn(tween(350))
+                slideInHorizontally(tween(260, easing = EaseOutCubic)) { it / 4 } + fadeIn(tween(260))
             },
             exitTransition = {
-                slideOutHorizontally(tween(280, easing = EaseInCubic)) { -it / 3 } + fadeOut(tween(280))
+                slideOutHorizontally(tween(200, easing = EaseInCubic)) { -it / 4 } + fadeOut(tween(200))
             },
             popEnterTransition = {
-                slideInHorizontally(tween(280, easing = EaseOutCubic)) { -it / 3 } + fadeIn(tween(280))
+                slideInHorizontally(tween(240, easing = EaseOutCubic)) { -it / 4 } + fadeIn(tween(240))
             },
             popExitTransition = {
-                slideOutHorizontally(tween(280, easing = EaseInCubic)) { it / 3 } + fadeOut(tween(280))
+                slideOutHorizontally(tween(200, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(200))
             }
         ) { backStackEntry ->
             val subjectId = backStackEntry.arguments?.getString("subjectId") ?: ""
@@ -121,16 +121,16 @@ fun SemFourApp() {
             route = Screen.TopicDetail().route,
             arguments = listOf(navArgument("topicId") { type = NavType.StringType }),
             enterTransition = {
-                slideInHorizontally(tween(350, easing = EaseOutCubic)) { it / 3 } + fadeIn(tween(350))
+                slideInHorizontally(tween(260, easing = EaseOutCubic)) { it / 4 } + fadeIn(tween(260))
             },
             exitTransition = {
-                slideOutHorizontally(tween(280, easing = EaseInCubic)) { -it / 3 } + fadeOut(tween(280))
+                slideOutHorizontally(tween(200, easing = EaseInCubic)) { -it / 4 } + fadeOut(tween(200))
             },
             popEnterTransition = {
-                slideInHorizontally(tween(280, easing = EaseOutCubic)) { -it / 3 } + fadeIn(tween(280))
+                slideInHorizontally(tween(240, easing = EaseOutCubic)) { -it / 4 } + fadeIn(tween(240))
             },
             popExitTransition = {
-                slideOutHorizontally(tween(280, easing = EaseInCubic)) { it / 3 } + fadeOut(tween(280))
+                slideOutHorizontally(tween(200, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(200))
             }
         ) { backStackEntry ->
             val topicId = backStackEntry.arguments?.getString("topicId") ?: ""
@@ -151,16 +151,16 @@ fun SemFourApp() {
                 navArgument("sessionType") { type = NavType.StringType }
             ),
             enterTransition = {
-                slideInVertically(tween(400, easing = EaseOutBack)) { it / 2 } + fadeIn(tween(350))
+                slideInVertically(tween(280, easing = EaseOutCubic)) { it / 4 } + fadeIn(tween(240))
             },
             exitTransition = {
-                slideOutVertically(tween(300, easing = EaseInCubic)) { it / 2 } + fadeOut(tween(300))
+                slideOutVertically(tween(220, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(220))
             },
             popEnterTransition = {
-                fadeIn(tween(250))
+                fadeIn(tween(200))
             },
             popExitTransition = {
-                slideOutVertically(tween(300, easing = EaseInCubic)) { it / 2 } + fadeOut(tween(300))
+                slideOutVertically(tween(220, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(220))
             }
         ) {
             StudySessionScreen(
@@ -219,11 +219,18 @@ private fun MainPagerScreen(navController: NavController) {
                         },
                         selected = selected,
                         onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    page = index,
-                                    animationSpec = tween(320, easing = FastOutSlowInEasing)
-                                )
+                            if (pagerState.currentPage != index) {
+                                coroutineScope.launch {
+                                    val diff = kotlin.math.abs(pagerState.currentPage - index)
+                                    if (diff > 1) {
+                                        pagerState.scrollToPage(index)
+                                    } else {
+                                        pagerState.animateScrollToPage(
+                                            page = index,
+                                            animationSpec = tween(220, easing = EaseOutCubic)
+                                        )
+                                    }
+                                }
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
@@ -237,7 +244,7 @@ private fun MainPagerScreen(navController: NavController) {
         HorizontalPager(
             state = pagerState,
             key = { it },
-            beyondViewportPageCount = 0,
+            beyondViewportPageCount = 1,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
