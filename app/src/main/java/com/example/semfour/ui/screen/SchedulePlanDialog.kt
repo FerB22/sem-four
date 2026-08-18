@@ -281,6 +281,8 @@ fun PlanTaskItem(
     subject: SubjectEntity?,
     onToggle: (Boolean) -> Unit
 ) {
+    var showAttachmentDetail by remember { mutableStateOf(false) }
+
     val subjectColor = subject?.let { parseHexColor(it.color) }
         ?: if (task.subjectId == "sub_consolidacion") Color(0xFF8B5CF6) else MaterialTheme.colorScheme.primary
     val subjectName = subject?.nombre ?: if (task.subjectId == "sub_consolidacion") "Consolidación y Cierre" else "Asignatura"
@@ -289,19 +291,19 @@ fun PlanTaskItem(
     Card(
         onClick = { onToggle(!task.isCompleted) },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.isCompleted) Color(0xFFF1F5F9) else Color.White
+            containerColor = if (task.isCompleted) Color(0xFFF8FAFC) else Color.White
         ),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            if (task.isCompleted) Color(0xFFCBD5E1) else Color(0xFFE2E8F0)
+            if (task.isCompleted) Color(0xFFE2E8F0) else Color(0xFFCBD5E1)
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
@@ -316,6 +318,7 @@ fun PlanTaskItem(
             Spacer(Modifier.width(8.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                // Título con etiqueta de color integrada directamente
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (subjectCode.isNotBlank()) {
                         Box(
@@ -336,7 +339,7 @@ fun PlanTaskItem(
                     Text(
                         text = subjectName,
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         color = if (task.isCompleted) Color(0xFF64748B) else Color(0xFF0F172A),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -359,22 +362,22 @@ fun PlanTaskItem(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .background(Color(0xFFF1F5F9))
+                            .clickable { showAttachmentDetail = !showAttachmentDetail }
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Description,
+                            imageVector = Icons.Default.AttachFile,
                             contentDescription = null,
-                            tint = if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF64748B),
+                            tint = if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF475569),
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = task.notebookFile,
+                            text = if (showAttachmentDetail) task.notebookFile else (task.notebookFile.take(30) + if (task.notebookFile.length > 30) "..." else ""),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF475569),
-                            maxLines = 1,
+                            maxLines = if (showAttachmentDetail) 3 else 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }

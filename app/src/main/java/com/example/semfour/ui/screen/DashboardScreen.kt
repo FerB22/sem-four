@@ -61,6 +61,18 @@ fun DashboardScreen(
     var evaluationToEdit by remember { mutableStateOf<EvaluationEntity?>(null) }
     var showEvaluationDialog by remember { mutableStateOf(false) }
     var showSchedulePlanDialog by remember { mutableStateOf(false) }
+    var showClassesBottomSheet by remember { mutableStateOf(false) }
+    var showAllEvaluations by remember { mutableStateOf(false) }
+    var showFullTopicQueue by remember { mutableStateOf(false) }
+
+    if (showClassesBottomSheet) {
+        TodayClassesBottomSheet(
+            classes = todaySchedule,
+            subjectMap = subjectMap,
+            onSubjectClick = onOpenSubject,
+            onDismiss = { showClassesBottomSheet = false }
+        )
+    }
 
     if (showSchedulePlanDialog) {
         SchedulePlanDialog(
@@ -89,12 +101,18 @@ fun DashboardScreen(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        // ── Header ───────────────────────────────────────────────────────────
+        // ── 1. Header con acceso superior a Clases y Micro-widget ───────────
         item {
-            DashboardHeader(todayMinutes = todayMinutes, dueCount = dueCount)
+            DashboardHeader(
+                todayMinutes = todayMinutes,
+                dueCount = dueCount,
+                todaySchedule = todaySchedule,
+                subjectMap = subjectMap,
+                onOpenClasses = { showClassesBottomSheet = true }
+            )
         }
 
-        // ── Tarjeta Prioritaria ──────────────────────────────────────────────
+        // ── 2. Tarjeta Prioritaria (Recomendación SM-2 N.º 1) ─────────────────
         item {
             topPriority?.let { priority ->
                 val subject = subjectMap[priority.topic.subjectId]
@@ -111,18 +129,7 @@ fun DashboardScreen(
             }
         }
 
-        // ── Clases de Hoy (si hay clases programadas) ─────────────────────────
-        if (todaySchedule.isNotEmpty()) {
-            item {
-                TodayClassesSection(
-                    classes = todaySchedule,
-                    subjectMap = subjectMap,
-                    onSubjectClick = onOpenSubject
-                )
-            }
-        }
-
-        // ── Cronograma Operativo de Estudio (Semana y Día) ───────────────────
+        // ── 3. Cronograma Operativo de Estudio (Semana y Día) ─────────────────
         item {
             DailyStudyPlanSection(
                 selectedWeek = selectedPlanWeek,
@@ -137,12 +144,17 @@ fun DashboardScreen(
             )
         }
 
-        // ── Chips de Asignaturas ─────────────────────────────────────────────
+        // ── 4. Chips de Asignaturas ───────────────────────────────────────────
         item {
             SubjectChipsRow(subjects = subjects, onSubjectClick = onOpenSubject)
         }
 
-        // ── Próximas evaluaciones ────────────────────────────────────────────
+        // ── 5. Próximas evaluaciones (Límite temporal + Colapsable) ───────────
+        val confirmedEvals = evaluations.filter { it.fechaEval > 0L }.sortedBy { it.fechaEval }
+        val undeterminedEvals = evaluations.filter { it.fechaEval == 0L }
+        val sortedEvaluations = confirmedEvals + undeterminedEvals
+        val displayedEvaluations = if (showAllEvaluations) sortedEvaluations else (if (confirmedEvals.isNotEmpty()) confirmedEvals.take(2) else sortedEvaluations.take(2))
+
         item {
             Row(
                 modifier = Modifier
@@ -151,11 +163,29 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "📅 Próximas evaluaciones",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "📅 Próximas evaluaciones",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (confirmedEvals.isNotEmpty()) {
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${confirmedEvals.size} confirmadas",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
                 FilledTonalButton(
                     onClick = {
                         evaluationToEdit = null
@@ -170,8 +200,9 @@ fun DashboardScreen(
                 }
             }
         }
-        if (evaluations.isNotEmpty()) {
-            items(evaluations, key = { it.id }) { eval ->
+
+        if (displayedEvaluations.isNotEmpty()) {
+            items(displayedEvaluations, key = { it.id }) { eval ->
                 EvaluationCard(
                     evaluation = eval,
                     subjectMap = subjectMap,
@@ -180,6 +211,23 @@ fun DashboardScreen(
                         showEvaluationDialog = true
                     }
                 )
+            }
+            if (sortedEvaluations.size > 2) {
+                item {
+                    TextButton(
+                        onClick = { showAllEvaluations = !showAllEvaluations },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        Text(
+                            text = if (showAllEvaluations) "Mostrar menos ▴" else "Ver más evaluaciones (+${sortedEvaluations.size - displayedEvaluations.size}) ▾",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         } else {
             item {
@@ -192,89 +240,54 @@ fun DashboardScreen(
             }
         }
 
-        // ── Cola de temas del día ────────────────────────────────────────────
-        item {
-            Text(
-                "📚 Cola de repaso (${allTopics.size} temas)",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-        }
-        items(allTopics.drop(1).take(5), key = { it.topic.id }) { priority ->
-            val subject = subjectMap[priority.topic.subjectId]
-            TopicQueueItem(
-                prioritizedTopic = priority,
-                subject = subject,
-                onStart = { onStartSession(priority.topic.id, SessionType.MICRO.name) }
-            )
-        }
-    }
-}
+        // ── 6. Cola de repaso (Top 3 temas + Expansión) ──────────────────────
+        val queueTopics = allTopics.drop(1)
+        val displayedQueue = if (showFullTopicQueue) queueTopics else queueTopics.take(3)
 
-@Composable
-private fun TodayClassesSection(
-    classes: List<ScheduleEntity>,
-    subjectMap: Map<String, SubjectEntity>,
-    onSubjectClick: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-    ) {
-        Text(
-            "🕒 Clases de hoy",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            classes.forEach { scheduleItem ->
-                val subject = subjectMap[scheduleItem.subjectId]
-                val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
-                Card(
-                    onClick = { subject?.let { onSubjectClick(it.id) } },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    modifier = Modifier.width(170.dp)
+        if (queueTopics.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "${scheduleItem.startTime} - ${scheduleItem.endTime}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = color,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Spacer(Modifier.height(6.dp))
+                    Text(
+                        "📚 Cola de repaso",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "${queueTopics.size} temas en total",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+
+            items(displayedQueue, key = { it.topic.id }) { priority ->
+                val subject = subjectMap[priority.topic.subjectId]
+                TopicQueueItem(
+                    prioritizedTopic = priority,
+                    subject = subject,
+                    onStart = { onStartSession(priority.topic.id, SessionType.MICRO.name) }
+                )
+            }
+
+            if (queueTopics.size > 3) {
+                item {
+                    TextButton(
+                        onClick = { showFullTopicQueue = !showFullTopicQueue },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp)
+                    ) {
                         Text(
-                            text = subject?.nombre ?: "Asignatura",
-                            style = MaterialTheme.typography.titleSmall,
+                            text = if (showFullTopicQueue) "⚡ Mostrar solo prioritarios ▴" else "⚡ +${queueTopics.size - 3} temas pendientes en cola ▾",
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = scheduleItem.room,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp,
-                            maxLines = 1
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -283,8 +296,129 @@ private fun TodayClassesSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DashboardHeader(todayMinutes: Int, dueCount: Int) {
+private fun TodayClassesBottomSheet(
+    classes: List<ScheduleEntity>,
+    subjectMap: Map<String, SubjectEntity>,
+    onSubjectClick: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "🕒 Horario de Hoy",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "${classes.size} clases programadas para hoy",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                classes.forEach { scheduleItem ->
+                    val subject = subjectMap[scheduleItem.subjectId]
+                    val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+
+                    Card(
+                        onClick = {
+                            subject?.let { onSubjectClick(it.id) }
+                            onDismiss()
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(44.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(color)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "${scheduleItem.startTime} - ${scheduleItem.endTime}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = color
+                                    )
+                                    if (subject?.codigo?.isNotBlank() == true) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "• ${subject.codigo}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = subject?.nombre ?: "Asignatura",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = "📍 ${scheduleItem.room} • 👨‍🏫 ${scheduleItem.professor}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF475569)
+                                )
+                            }
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = Color(0xFF94A3B8),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardHeader(
+    todayMinutes: Int,
+    dueCount: Int,
+    todaySchedule: List<ScheduleEntity>,
+    subjectMap: Map<String, SubjectEntity>,
+    onOpenClasses: () -> Unit
+) {
     val cal = Calendar.getInstance()
     val hora = cal.get(Calendar.HOUR_OF_DAY)
     val saludo = when {
@@ -293,7 +427,10 @@ private fun DashboardHeader(todayMinutes: Int, dueCount: Int) {
         else -> "Buenas noches 🌙"
     }
 
-    Box(
+    val nextClass = remember(todaySchedule) { todaySchedule.firstOrNull() }
+    val nextClassSubject = nextClass?.let { subjectMap[it.subjectId]?.nombre } ?: ""
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(
@@ -304,7 +441,7 @@ private fun DashboardHeader(todayMinutes: Int, dueCount: Int) {
                     )
                 )
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -324,27 +461,112 @@ private fun DashboardHeader(todayMinutes: Int, dueCount: Int) {
                 )
             }
 
-            // Stat chip minutos hoy
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (todaySchedule.isNotEmpty()) {
+                    Surface(
+                        onClick = onOpenClasses,
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        tonalElevation = 2.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "${todaySchedule.size} clases",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Stat chip minutos hoy
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Timer,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "$todayMinutes min hoy",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+
+        // Micro-banner si hay clases hoy (delgado e interactivo)
+        if (nextClass != null) {
+            Spacer(Modifier.height(10.dp))
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 2.dp
+                onClick = onOpenClasses,
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Próx: ${nextClass.startTime} $nextClassSubject",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "• ${nextClass.room}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF64748B),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Icon(
-                        Icons.Default.Timer,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "$todayMinutes min hoy",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
+                        Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Ver horario",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
