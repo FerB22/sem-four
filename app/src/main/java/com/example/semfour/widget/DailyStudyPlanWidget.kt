@@ -94,7 +94,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .background(Color(0xFFFFFFFF))
                 .cornerRadius(18.dp)
-                .padding(12.dp)
+                .padding(10.dp)
                 .clickable(actionStartActivity<MainActivity>()),
             contentAlignment = Alignment.TopStart
         ) {
@@ -132,7 +132,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     }
                 }
 
-                Spacer(modifier = GlanceModifier.height(8.dp))
+                Spacer(modifier = GlanceModifier.height(6.dp))
 
                 // Lista de Cuadernos .ipynb a estudiar hoy
                 if (tasks.isNotEmpty()) {
@@ -141,7 +141,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     ) {
                         items(tasks) { task ->
                             TaskRowItem(task)
-                            Spacer(modifier = GlanceModifier.height(6.dp))
+                            Spacer(modifier = GlanceModifier.height(4.dp))
                         }
                     }
                 } else {
@@ -150,10 +150,10 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "🎉 ¡Sin cuadernos asignados para hoy! Buen día para repasar.",
+                            text = "🎉 ¡Sin cuadernos para hoy! Día libre.",
                             style = TextStyle(
                                 color = androidx.glance.unit.ColorProvider(Color(0xFF64748B)),
-                                fontSize = 11.sp
+                                fontSize = 10.sp
                             )
                         )
                     }
@@ -175,7 +175,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                 .fillMaxWidth()
                 .background(if (task.isCompleted) Color(0xFFF1F5F9) else Color(0xFFF8FAFC))
                 .cornerRadius(8.dp)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
         ) {
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
