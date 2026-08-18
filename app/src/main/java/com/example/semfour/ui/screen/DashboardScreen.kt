@@ -102,7 +102,7 @@ fun DashboardScreen(
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         // ── 1. Header con acceso superior a Clases y Micro-widget ───────────
-        item {
+        item(contentType = "header") {
             DashboardHeader(
                 todayMinutes = todayMinutes,
                 dueCount = dueCount,
@@ -113,7 +113,7 @@ fun DashboardScreen(
         }
 
         // ── 2. Tarjeta Prioritaria (Recomendación SM-2 N.º 1) ─────────────────
-        item {
+        item(contentType = "priority_card") {
             topPriority?.let { priority ->
                 val subject = subjectMap[priority.topic.subjectId]
                 PriorityTopicCard(
@@ -130,7 +130,7 @@ fun DashboardScreen(
         }
 
         // ── 3. Cronograma Operativo de Estudio (Semana y Día) ─────────────────
-        item {
+        item(contentType = "daily_plan") {
             DailyStudyPlanSection(
                 selectedWeek = selectedPlanWeek,
                 selectedDay = selectedPlanDay,
@@ -145,17 +145,26 @@ fun DashboardScreen(
         }
 
         // ── 4. Chips de Asignaturas ───────────────────────────────────────────
-        item {
+        item(contentType = "subject_chips") {
             SubjectChipsRow(subjects = subjects, onSubjectClick = onOpenSubject)
         }
 
         // ── 5. Próximas evaluaciones (Límite temporal + Colapsable) ───────────
-        val confirmedEvals = evaluations.filter { it.fechaEval > 0L }.sortedBy { it.fechaEval }
-        val undeterminedEvals = evaluations.filter { it.fechaEval == 0L }
-        val sortedEvaluations = confirmedEvals + undeterminedEvals
-        val displayedEvaluations = if (showAllEvaluations) sortedEvaluations else (if (confirmedEvals.isNotEmpty()) confirmedEvals.take(2) else sortedEvaluations.take(2))
+        val confirmedEvals = remember(evaluations) {
+            evaluations.filter { it.fechaEval > 0L }.sortedBy { it.fechaEval }
+        }
+        val undeterminedEvals = remember(evaluations) {
+            evaluations.filter { it.fechaEval == 0L }
+        }
+        val sortedEvaluations = remember(confirmedEvals, undeterminedEvals) {
+            confirmedEvals + undeterminedEvals
+        }
+        val displayedEvaluations = remember(sortedEvaluations, showAllEvaluations, confirmedEvals) {
+            if (showAllEvaluations) sortedEvaluations
+            else (if (confirmedEvals.isNotEmpty()) confirmedEvals.take(2) else sortedEvaluations.take(2))
+        }
 
-        item {
+        item(contentType = "evaluations_header") {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -202,7 +211,7 @@ fun DashboardScreen(
         }
 
         if (displayedEvaluations.isNotEmpty()) {
-            items(displayedEvaluations, key = { it.id }) { eval ->
+            items(displayedEvaluations, key = { it.id }, contentType = { "evaluation_card" }) { eval ->
                 EvaluationCard(
                     evaluation = eval,
                     subjectMap = subjectMap,
@@ -213,7 +222,7 @@ fun DashboardScreen(
                 )
             }
             if (sortedEvaluations.size > 2) {
-                item {
+                item(contentType = "evaluations_expand_btn") {
                     TextButton(
                         onClick = { showAllEvaluations = !showAllEvaluations },
                         modifier = Modifier
@@ -230,7 +239,7 @@ fun DashboardScreen(
                 }
             }
         } else {
-            item {
+            item(contentType = "evaluations_empty") {
                 Text(
                     "No hay evaluaciones registradas. Toca «Añadir» para registrar una.",
                     style = MaterialTheme.typography.bodySmall,
@@ -241,11 +250,13 @@ fun DashboardScreen(
         }
 
         // ── 6. Cola de repaso (Top 3 temas + Expansión) ──────────────────────
-        val queueTopics = allTopics.drop(1)
-        val displayedQueue = if (showFullTopicQueue) queueTopics else queueTopics.take(3)
+        val queueTopics = remember(allTopics) { allTopics.drop(1) }
+        val displayedQueue = remember(queueTopics, showFullTopicQueue) {
+            if (showFullTopicQueue) queueTopics else queueTopics.take(3)
+        }
 
         if (queueTopics.isNotEmpty()) {
-            item {
+            item(contentType = "queue_header") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -266,7 +277,7 @@ fun DashboardScreen(
                 }
             }
 
-            items(displayedQueue, key = { it.topic.id }) { priority ->
+            items(displayedQueue, key = { it.topic.id }, contentType = { "queue_item" }) { priority ->
                 val subject = subjectMap[priority.topic.subjectId]
                 TopicQueueItem(
                     prioritizedTopic = priority,
@@ -276,7 +287,7 @@ fun DashboardScreen(
             }
 
             if (queueTopics.size > 3) {
-                item {
+                item(contentType = "queue_expand_btn") {
                     TextButton(
                         onClick = { showFullTopicQueue = !showFullTopicQueue },
                         modifier = Modifier
@@ -892,11 +903,20 @@ private fun TopicQueueItem(
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
+private val colorCache = java.util.concurrent.ConcurrentHashMap<String, Color>()
+
 fun parseHexColor(hex: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(hex))
-    } catch (e: Exception) {
-        Color.Gray
+    if (hex.isBlank()) return Color.Gray
+    return colorCache.getOrPut(hex) {
+        try {
+            Color(hex.toColorInt())
+        } catch (_: Exception) {
+            try {
+                Color(android.graphics.Color.parseColor(hex))
+            } catch (_: Exception) {
+                Color.Gray
+            }
+        }
     }
 }
 
@@ -923,15 +943,19 @@ private fun DailyStudyPlanSection(
 ) {
     val weekCompleted = remember(weekTasks) { weekTasks.count { it.isCompleted } }
     val weekTotal = remember(weekTasks) { weekTasks.size.coerceAtLeast(1) }
-    val weekPercent = (weekCompleted.toFloat() / weekTotal.toFloat() * 100).toInt()
+    val weekPercent = remember(weekCompleted, weekTotal) {
+        (weekCompleted.toFloat() / weekTotal.toFloat() * 100).toInt()
+    }
 
-    val days = listOf(
-        1 to "Lun",
-        2 to "Mar",
-        3 to "Mié",
-        4 to "Jue",
-        5 to "Vie"
-    )
+    val days = remember {
+        listOf(
+            1 to "Lun",
+            2 to "Mar",
+            3 to "Mié",
+            4 to "Jue",
+            5 to "Vie"
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -1041,11 +1065,13 @@ private fun DailyStudyPlanSection(
             if (tasks.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     tasks.forEach { task ->
-                        PlanTaskItem(
-                            task = task,
-                            subject = subjectMap[task.subjectId],
-                            onToggle = { isChecked -> onToggleTask(task.id, isChecked) }
-                        )
+                        key(task.id) {
+                            PlanTaskItem(
+                                task = task,
+                                subject = subjectMap[task.subjectId],
+                                onToggle = { isChecked -> onToggleTask(task.id, isChecked) }
+                            )
+                        }
                     }
                 }
             } else {
