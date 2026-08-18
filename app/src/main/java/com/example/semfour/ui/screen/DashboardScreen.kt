@@ -50,10 +50,27 @@ fun DashboardScreen(
     val dueCount by viewModel.dueTodayCount.collectAsStateWithLifecycle()
     val todaySchedule by viewModel.todaySchedule.collectAsStateWithLifecycle()
 
+    val selectedPlanWeek by viewModel.selectedPlanWeek.collectAsStateWithLifecycle()
+    val selectedPlanDay by viewModel.selectedPlanDay.collectAsStateWithLifecycle()
+    val planTasksForDay by viewModel.planTasksForSelectedDay.collectAsStateWithLifecycle()
+    val planTasksForWeek by viewModel.planTasksForSelectedWeek.collectAsStateWithLifecycle()
+    val allPlanTasks by viewModel.allPlanTasks.collectAsStateWithLifecycle()
+
     val subjectMap = remember(subjects) { subjects.associateBy { it.id } }
 
     var evaluationToEdit by remember { mutableStateOf<EvaluationEntity?>(null) }
     var showEvaluationDialog by remember { mutableStateOf(false) }
+    var showSchedulePlanDialog by remember { mutableStateOf(false) }
+
+    if (showSchedulePlanDialog) {
+        SchedulePlanDialog(
+            allTasks = allPlanTasks,
+            subjects = subjects,
+            initialWeek = selectedPlanWeek,
+            onToggleTask = { taskId, isCompleted -> viewModel.togglePlanTask(taskId, isCompleted) },
+            onDismiss = { showSchedulePlanDialog = false }
+        )
+    }
 
     if (showEvaluationDialog) {
         EvaluationFormDialog(
@@ -103,6 +120,21 @@ fun DashboardScreen(
                     onSubjectClick = onOpenSubject
                 )
             }
+        }
+
+        // ── Cronograma Operativo de Estudio (Semana y Día) ───────────────────
+        item {
+            DailyStudyPlanSection(
+                selectedWeek = selectedPlanWeek,
+                selectedDay = selectedPlanDay,
+                tasks = planTasksForDay,
+                weekTasks = planTasksForWeek,
+                subjectMap = subjectMap,
+                onSelectWeek = { viewModel.selectPlanWeek(it) },
+                onSelectDay = { viewModel.selectPlanDay(it) },
+                onToggleTask = { taskId, isCompleted -> viewModel.togglePlanTask(taskId, isCompleted) },
+                onOpenFullSchedule = { showSchedulePlanDialog = true }
+            )
         }
 
         // ── Chips de Asignaturas ─────────────────────────────────────────────
@@ -653,4 +685,155 @@ fun confidenceColor(nivel: Int): Color = when (nivel) {
     4 -> Color(0xFF81C784)
     5 -> Color(0xFF4CAF50)
     else -> Color.Gray
+}
+
+@Composable
+private fun DailyStudyPlanSection(
+    selectedWeek: Int,
+    selectedDay: Int,
+    tasks: List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>,
+    weekTasks: List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>,
+    subjectMap: Map<String, SubjectEntity>,
+    onSelectWeek: (Int) -> Unit,
+    onSelectDay: (Int) -> Unit,
+    onToggleTask: (String, Boolean) -> Unit,
+    onOpenFullSchedule: () -> Unit
+) {
+    val weekCompleted = remember(weekTasks) { weekTasks.count { it.isCompleted } }
+    val weekTotal = remember(weekTasks) { weekTasks.size.coerceAtLeast(1) }
+    val weekPercent = (weekCompleted.toFloat() / weekTotal.toFloat() * 100).toInt()
+
+    val days = listOf(
+        1 to "Lun",
+        2 to "Mar",
+        3 to "Mié",
+        4 to "Jue",
+        5 to "Vie"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Cabecera con selector de semana y botón para abrir visor completo
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { onSelectWeek(selectedWeek - 1) },
+                        enabled = selectedWeek > 1,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Semana anterior", modifier = Modifier.size(20.dp))
+                    }
+
+                    Text(
+                        text = "Semana $selectedWeek de 16",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+
+                    IconButton(
+                        onClick = { onSelectWeek(selectedWeek + 1) },
+                        enabled = selectedWeek < 16,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Semana siguiente", modifier = Modifier.size(20.dp))
+                    }
+                }
+
+                TextButton(
+                    onClick = onOpenFullSchedule,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Icon(Icons.Default.CalendarViewMonth, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Ver todo", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Barra de progreso de la semana
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Progreso semanal: $weekCompleted/$weekTotal tareas",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF64748B)
+                )
+                Text(
+                    text = "$weekPercent%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            LinearProgressIndicator(
+                progress = { weekCompleted.toFloat() / weekTotal.toFloat() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color(0xFFF1F5F9)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Selector de días Lunes a Viernes
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                days.forEach { (dayNum, dayLabel) ->
+                    val isSelected = selectedDay == dayNum
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onSelectDay(dayNum) },
+                        label = { Text(dayLabel, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF0F172A),
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Lista de tareas del día seleccionado
+            if (tasks.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tasks.forEach { task ->
+                        PlanTaskItem(
+                            task = task,
+                            subject = subjectMap[task.subjectId],
+                            onToggle = { isChecked -> onToggleTask(task.id, isChecked) }
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    "No hay tareas asignadas para este día.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B),
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+    }
 }

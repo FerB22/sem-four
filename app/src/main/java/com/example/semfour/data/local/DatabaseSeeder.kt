@@ -1,5 +1,6 @@
 package com.example.semfour.data.local
 
+import com.example.semfour.data.local.dao.DailyPlanDao
 import com.example.semfour.data.local.dao.EvaluationDao
 import com.example.semfour.data.local.dao.ScheduleDao
 import com.example.semfour.data.local.dao.SubjectDao
@@ -14,14 +15,15 @@ import javax.inject.Singleton
 
 /**
  * Inicializa y gestiona los temas y evaluaciones oficiales del 4.º Semestre (Duoc UC).
- * Soporta la activación/desactivación dinámica de las Experiencias 1, 2 y 3.
+ * Soporta la activación/desactivación dinámica de las Experiencias 1, 2 y 3 y el Cronograma de 16 semanas.
  */
 @Singleton
 class DatabaseSeeder @Inject constructor(
     private val subjectDao: SubjectDao,
     private val topicDao: TopicDao,
     private val evaluationDao: EvaluationDao,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    private val dailyPlanDao: DailyPlanDao
 ) {
     companion object {
         const val UN_DIA_MS = 86_400_000L
@@ -112,6 +114,11 @@ class DatabaseSeeder @Inject constructor(
         // Si inglés está habilitado, asegurar su horario de clases
         if (isEnglishEnabled()) {
             scheduleDao.insertSchedule(getEnglishSchedule())
+        }
+
+        // ── 4. Cronograma Diario de Estudio (16 Semanas) ────────────────────
+        if (dailyPlanDao.getTaskCount() == 0) {
+            dailyPlanDao.insertTasks(StudyPlanCatalog.generateAllTasks())
         }
     }
 

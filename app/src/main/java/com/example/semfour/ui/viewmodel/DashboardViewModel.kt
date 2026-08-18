@@ -68,6 +68,54 @@ class DashboardViewModel @Inject constructor(
         .map { topics -> topics.count { it.estaVencido || it.esNuevo } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    // ── Cronograma Diario de Estudio (16 Semanas) ──
+    private val _selectedPlanWeek = MutableStateFlow(1)
+    val selectedPlanWeek: StateFlow<Int> = _selectedPlanWeek.asStateFlow()
+
+    private val _selectedPlanDay = MutableStateFlow(if (currentDayOfWeek in 1..5) currentDayOfWeek else 1)
+    val selectedPlanDay: StateFlow<Int> = _selectedPlanDay.asStateFlow()
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val planTasksForSelectedDay: StateFlow<List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>> = combine(
+        _selectedPlanWeek,
+        _selectedPlanDay
+    ) { week, day ->
+        Pair(week, day)
+    }.flatMapLatest { (week, day) ->
+        studyRepository.getPlanTasksForDay(week, day)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val planTasksForSelectedWeek: StateFlow<List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>> = _selectedPlanWeek
+        .flatMapLatest { week -> studyRepository.getPlanTasksForWeek(week) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allPlanTasks: StateFlow<List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>> = studyRepository
+        .getAllPlanTasks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val completedPlanTasksCount: StateFlow<Int> = studyRepository
+        .getCompletedPlanTaskCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val totalPlanTasksCount: StateFlow<Int> = studyRepository
+        .getTotalPlanTaskCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    fun selectPlanWeek(week: Int) {
+        _selectedPlanWeek.value = week.coerceIn(1, 16)
+    }
+
+    fun selectPlanDay(day: Int) {
+        _selectedPlanDay.value = day.coerceIn(1, 5)
+    }
+
+    fun togglePlanTask(taskId: String, isCompleted: Boolean) {
+        viewModelScope.launch {
+            studyRepository.togglePlanTaskStatus(taskId, isCompleted)
+        }
+    }
+
     fun updateEvaluationDate(evalId: String, fechaEval: Long) {
         viewModelScope.launch {
             studyRepository.updateEvaluationDate(evalId, fechaEval)

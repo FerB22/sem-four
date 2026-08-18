@@ -24,6 +24,7 @@ class StudyRepository @Inject constructor(
     private val evaluationDao: EvaluationDao,
     private val habitDayDao: HabitDayDao,
     private val scheduleDao: ScheduleDao,
+    private val dailyPlanDao: DailyPlanDao,
     private val databaseSeeder: DatabaseSeeder
 ) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -175,6 +176,29 @@ class StudyRepository @Inject constructor(
         cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
         val inicioSemana = dateFormat.format(cal.time)
         return habitDayDao.getWeeklyMinutes(inicioSemana)
+    }
+
+    // ── Cronograma Diario de Estudio (16 Semanas) ─────────────────────────────
+
+    fun getAllPlanTasks(): Flow<List<DailyPlanTaskEntity>> = dailyPlanDao.getAllTasks()
+
+    fun getPlanTasksForWeek(weekNumber: Int): Flow<List<DailyPlanTaskEntity>> =
+        dailyPlanDao.getTasksForWeek(weekNumber)
+
+    fun getPlanTasksForDay(weekNumber: Int, dayOfWeek: Int): Flow<List<DailyPlanTaskEntity>> =
+        dailyPlanDao.getTasksForDay(weekNumber, dayOfWeek)
+
+    fun getCompletedPlanTaskCount(): Flow<Int> = dailyPlanDao.getCompletedTaskCountFlow()
+
+    fun getTotalPlanTaskCount(): Flow<Int> = dailyPlanDao.getTotalTaskCountFlow()
+
+    suspend fun togglePlanTaskStatus(taskId: String, isCompleted: Boolean) {
+        val ahora = System.currentTimeMillis()
+        dailyPlanDao.updateTaskStatus(taskId, isCompleted, if (isCompleted) ahora else null)
+        if (isCompleted) {
+            // Al completar un cuaderno sumamos 15 min a los hábitos del día
+            actualizarHabitDelDia(15, ahora)
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
