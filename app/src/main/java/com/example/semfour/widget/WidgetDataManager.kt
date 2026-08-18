@@ -66,4 +66,42 @@ class WidgetDataManager @Inject constructor(
             WeeklyScheduleWidget().update(context, glanceId)
         }
     }
+
+    suspend fun updateDailyPlanWidget(
+        week: Int,
+        dayOfWeek: Int,
+        tasks: List<com.example.semfour.data.local.entity.DailyPlanTaskEntity>,
+        subjects: List<com.example.semfour.data.local.entity.SubjectEntity>
+    ) {
+        val manager = GlanceAppWidgetManager(context)
+        val glanceIds = manager.getGlanceIds(DailyStudyPlanWidget::class.java)
+        if (glanceIds.isEmpty()) return
+
+        val subjectMap = subjects.associateBy { it.id }
+
+        glanceIds.forEach { glanceId ->
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[DailyStudyPlanWidget.KEY_WEEK_NUMBER] = week
+                prefs[DailyStudyPlanWidget.KEY_DAY_OF_WEEK] = dayOfWeek
+                prefs[DailyStudyPlanWidget.KEY_DAY_NAME] = DailyStudyPlanWidget.getDayName(dayOfWeek)
+                prefs[DailyStudyPlanWidget.KEY_TASK_COUNT] = tasks.size
+
+                tasks.forEachIndexed { index, task ->
+                    val subject = subjectMap[task.subjectId]
+                    val code = subject?.codigo ?: if (task.subjectId == "sub_consolidacion") "CIERRE" else ""
+                    val name = subject?.nombre ?: if (task.subjectId == "sub_consolidacion") "Consolidación" else "Asignatura"
+                    val color = subject?.color ?: if (task.subjectId == "sub_consolidacion") "#8B5CF6" else "#3B82F6"
+
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_id")] = task.id
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_code")] = code
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_name")] = name
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_color")] = color
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_type")] = task.taskType
+                    prefs[androidx.datastore.preferences.core.stringPreferencesKey("task_${index}_file")] = task.notebookFile
+                    prefs[androidx.datastore.preferences.core.booleanPreferencesKey("task_${index}_done")] = task.isCompleted
+                }
+            }
+            DailyStudyPlanWidget().update(context, glanceId)
+        }
+    }
 }

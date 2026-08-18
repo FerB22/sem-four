@@ -180,6 +180,22 @@ class DashboardViewModel @Inject constructor(
                 widgetDataManager.updateWeeklyScheduleWidget()
             }
         }
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            combine(
+                selectedPlanWeek,
+                selectedPlanDay,
+                planTasksForSelectedDay,
+                subjects
+            ) { week, day, tasks, subjectList ->
+                widgetDataManager.updateDailyPlanWidget(
+                    week = week,
+                    dayOfWeek = day,
+                    tasks = tasks,
+                    subjects = subjectList
+                )
+            }.collect()
+        }
     }
 
     companion object {

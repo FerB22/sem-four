@@ -84,6 +84,18 @@
                 android:resource="@xml/weekly_schedule_widget_info" />
         </receiver>
 
+        <!-- Widget 4: Cuadernos y Plan de Estudio Diario -->
+        <receiver
+            android:name=".widget.DailyStudyPlanWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/daily_study_plan_widget_info" />
+        </receiver>
+
         <!-- Receiver para disparar la notificación de asistencia a los 30 min -->
         <receiver
             android:name=".notification.AttendanceNotificationReceiver"
