@@ -45,6 +45,8 @@ data class WidgetClassItem(
  * Widget 3: Horario Semanal Completo para la pantalla de inicio (Light & Clean Theme).
  * Muestra todos los bloques de clases de Lunes a Jueves con salas y profesores.
  */
+class WeeklyScheduleWidget : GlanceAppWidget() {
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val scheduleDays = defaultSchedule()
 
