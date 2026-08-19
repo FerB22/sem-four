@@ -29,6 +29,8 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.launch
 import com.example.semfour.MainActivity
 import com.example.semfour.data.local.StudyPlanCatalog
 import com.example.semfour.ui.viewmodel.DashboardViewModel
@@ -58,12 +60,14 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
             GlanceTheme {
                 val prefs = currentState<Preferences>()
                 val week = prefs[KEY_WEEK_NUMBER] ?: 1
-                val dayOfWeek = prefs[KEY_DAY_OF_WEEK] ?: DashboardViewModel.getDayOfWeekIndex().coerceIn(1, 5)
-                val dayName = prefs[KEY_DAY_NAME] ?: getDayName(dayOfWeek)
+                val liveDayOfWeek = DashboardViewModel.getDayOfWeekIndex().coerceIn(1, 5)
+                val savedDay = prefs[KEY_DAY_OF_WEEK]
+                val dayOfWeek = if (savedDay != null && savedDay == liveDayOfWeek) savedDay else liveDayOfWeek
+                val dayName = getDayName(dayOfWeek)
 
-                // Cargar tareas desde prefs o catálogo por defecto
+                // Cargar tareas desde prefs o catálogo por defecto si el día coincide
                 val taskCount = prefs[KEY_TASK_COUNT] ?: -1
-                val tasks = if (taskCount >= 0) {
+                val tasks = if (savedDay == liveDayOfWeek && taskCount >= 0) {
                     (0 until taskCount).map { i ->
                         WidgetPlanTask(
                             id = prefs[stringPreferencesKey("task_${i}_id")] ?: "",
@@ -76,7 +80,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                         )
                     }
                 } else {
-                    getDefaultTasksForDay(week, dayOfWeek)
+                    getDefaultTasksForDay(week, liveDayOfWeek)
                 }
 
                 DailyStudyPlanContent(
@@ -300,4 +304,17 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
 
 class DailyStudyPlanWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DailyStudyPlanWidget()
+
+    override fun onReceive(context: Context, intent: android.content.Intent) {
+        super.onReceive(context, intent)
+        val action = intent.action
+        if (action == android.content.Intent.ACTION_DATE_CHANGED ||
+            action == android.content.Intent.ACTION_TIME_CHANGED ||
+            action == android.content.Intent.ACTION_TIMEZONE_CHANGED ||
+            action == android.content.Intent.ACTION_BOOT_COMPLETED) {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                DailyStudyPlanWidget().updateAll(context)
+            }
+        }
+    }
 }

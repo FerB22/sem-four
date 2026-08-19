@@ -21,6 +21,8 @@ import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.launch
 import com.example.semfour.MainActivity
 import com.example.semfour.ui.viewmodel.DashboardViewModel
 
@@ -43,14 +45,12 @@ data class WidgetClassItem(
  * Widget 3: Horario Semanal Completo para la pantalla de inicio (Light & Clean Theme).
  * Muestra todos los bloques de clases de Lunes a Jueves con salas y profesores.
  */
-class WeeklyScheduleWidget : GlanceAppWidget() {
-
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val currentDay = DashboardViewModel.getDayOfWeekIndex()
         val scheduleDays = defaultSchedule()
 
         provideContent {
             GlanceTheme {
+                val currentDay = DashboardViewModel.getDayOfWeekIndex()
                 WeeklyScheduleContent(
                     scheduleDays = scheduleDays,
                     currentDay = currentDay
@@ -280,4 +280,17 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
 
 class WeeklyScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WeeklyScheduleWidget()
+
+    override fun onReceive(context: Context, intent: android.content.Intent) {
+        super.onReceive(context, intent)
+        val action = intent.action
+        if (action == android.content.Intent.ACTION_DATE_CHANGED ||
+            action == android.content.Intent.ACTION_TIME_CHANGED ||
+            action == android.content.Intent.ACTION_TIMEZONE_CHANGED ||
+            action == android.content.Intent.ACTION_BOOT_COMPLETED) {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                WeeklyScheduleWidget().updateAll(context)
+            }
+        }
+    }
 }
