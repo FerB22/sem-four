@@ -1,3 +1,5 @@
+@file:Suppress("RestrictedApi")
+
 package com.example.semfour.widget
 
 import android.content.Context
