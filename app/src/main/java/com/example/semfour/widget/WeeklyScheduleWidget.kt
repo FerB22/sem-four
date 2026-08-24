@@ -28,6 +28,8 @@ import kotlinx.coroutines.launch
 import com.example.semfour.MainActivity
 import com.example.semfour.ui.viewmodel.DashboardViewModel
 
+import java.util.Calendar
+
 data class WidgetScheduleDay(
     val dayNum: Int,
     val dayName: String,
@@ -43,9 +45,23 @@ data class WidgetClassItem(
     val colorHex: String
 )
 
+private enum class ClassLiveStatus {
+    PASSED,
+    IN_PROGRESS,
+    NEXT,
+    PENDING,
+    OTHER_DAY
+}
+
+private data class ClassStatusInfo(
+    val status: ClassLiveStatus,
+    val timeInfo: String,
+    val isPastDay: Boolean
+)
+
 /**
  * Widget 3: Horario Semanal Completo para la pantalla de inicio (Light & Clean Theme).
- * Muestra todos los bloques de clases de Lunes a Jueves con salas y profesores.
+ * Muestra todos los bloques de clases de Lunes a Jueves con salas, profesores y estado en vivo.
  */
 class WeeklyScheduleWidget : GlanceAppWidget() {
 
@@ -54,10 +70,14 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
+                val cal = Calendar.getInstance()
                 val currentDay = DashboardViewModel.getDayOfWeekIndex()
+                val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+
                 WeeklyScheduleContent(
                     scheduleDays = scheduleDays,
-                    currentDay = currentDay
+                    currentDay = currentDay,
+                    currentMinutes = currentMinutes
                 )
             }
         }
@@ -66,7 +86,8 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
     @Composable
     private fun WeeklyScheduleContent(
         scheduleDays: List<WidgetScheduleDay>,
-        currentDay: Int
+        currentDay: Int,
+        currentMinutes: Int
     ) {
         Box(
             modifier = GlanceModifier
@@ -109,8 +130,11 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.fillMaxSize()
                 ) {
                     items(scheduleDays) { day ->
-                        val isToday = day.dayNum == currentDay
-                        DaySection(day = day, isToday = isToday)
+                        DaySection(
+                            day = day,
+                            currentDay = currentDay,
+                            currentMinutes = currentMinutes
+                        )
                         Spacer(modifier = GlanceModifier.height(8.dp))
                     }
                 }
@@ -119,9 +143,17 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun DaySection(day: WidgetScheduleDay, isToday: Boolean) {
+    private fun DaySection(
+        day: WidgetScheduleDay,
+        currentDay: Int,
+        currentMinutes: Int
+    ) {
+        val isToday = day.dayNum == currentDay
+        val isPastDay = day.dayNum < currentDay
         val headerBg = if (isToday) Color(0xFF0F172A) else Color(0xFFF1F5F9)
         val headerTextColor = if (isToday) Color(0xFFFFFFFF) else Color(0xFF475569)
+
+        var foundNext = false
 
         Column(
             modifier = GlanceModifier
@@ -164,72 +196,162 @@ class WeeklyScheduleWidget : GlanceAppWidget() {
 
             // Classes list
             day.classes.forEach { item ->
-                ClassItemRow(item = item)
+                val statusInfo = if (isToday) {
+                    val interval = parseTimeInterval(item.time)
+                    if (interval != null) {
+                        val (startMin, endMin) = interval
+                        when {
+                            currentMinutes > endMin -> {
+                                ClassStatusInfo(ClassLiveStatus.PASSED, "✓ Finalizada", false)
+                            }
+                            currentMinutes in startMin..endMin -> {
+                                val remMin = maxOf(1, endMin - currentMinutes)
+                                ClassStatusInfo(ClassLiveStatus.IN_PROGRESS, "⏱️ Termina en ${remMin}m", false)
+                            }
+                            currentMinutes < startMin -> {
+                                if (!foundNext) {
+                                    foundNext = true
+                                    val diff = maxOf(1, startMin - currentMinutes)
+                                    val info = if (diff >= 60) {
+                                        val h = diff / 60
+                                        val m = diff % 60
+                                        if (m > 0) "⏳ En ${h}h ${m}m" else "⏳ En ${h}h"
+                                    } else {
+                                        "⏳ En ${diff}m"
+                                    }
+                                    ClassStatusInfo(ClassLiveStatus.NEXT, info, false)
+                                } else {
+                                    ClassStatusInfo(ClassLiveStatus.PENDING, "", false)
+                                }
+                            }
+                            else -> ClassStatusInfo(ClassLiveStatus.PENDING, "", false)
+                        }
+                    } else {
+                        ClassStatusInfo(ClassLiveStatus.PENDING, "", false)
+                    }
+                } else {
+                    ClassStatusInfo(ClassLiveStatus.OTHER_DAY, "", isPastDay)
+                }
+
+                ClassItemRow(item = item, statusInfo = statusInfo)
             }
         }
     }
 
     @Composable
-    private fun ClassItemRow(item: WidgetClassItem) {
-        val accentColor = parseColor(item.colorHex)
+    private fun ClassItemRow(item: WidgetClassItem, statusInfo: ClassStatusInfo) {
+        val isPassed = statusInfo.status == ClassLiveStatus.PASSED || statusInfo.isPastDay
+        val isInProgress = statusInfo.status == ClassLiveStatus.IN_PROGRESS
+        val isNext = statusInfo.status == ClassLiveStatus.NEXT
 
-        Row(
+        val accentColor = if (isPassed) Color(0xFFCBD5E1) else parseColor(item.colorHex)
+        val titleColor = if (isPassed) Color(0xFF94A3B8) else Color(0xFF0F172A)
+        val timeColor = if (isPassed) Color(0xFF94A3B8) else if (isInProgress) Color(0xFF059669) else Color(0xFF0284C7)
+        val roomColor = if (isPassed) Color(0xFFCBD5E1) else Color(0xFF64748B)
+
+        val rowBackground = when {
+            isInProgress -> Color(0xFFF0FDF4)
+            isNext -> Color(0xFFFFFFFF)
+            else -> Color.Transparent
+        }
+
+        Box(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(rowBackground)
+                .cornerRadius(8.dp)
+                .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            // Barra de color de asignatura
-            Box(
-                modifier = GlanceModifier
-                    .width(4.dp)
-                    .height(28.dp)
-                    .background(accentColor)
-                    .cornerRadius(2.dp)
-            ) {}
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Barra de color de asignatura
+                Box(
+                    modifier = GlanceModifier
+                        .width(4.dp)
+                        .height(30.dp)
+                        .background(accentColor)
+                        .cornerRadius(2.dp)
+                ) {}
 
-            Spacer(modifier = GlanceModifier.width(8.dp))
+                Spacer(modifier = GlanceModifier.width(8.dp))
 
-            // Info de la clase
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = item.subjectName,
-                        maxLines = 1,
-                        style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF0F172A)),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                // Info de la clase
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = item.subjectName,
+                            maxLines = 1,
+                            style = TextStyle(
+                                color = androidx.glance.unit.ColorProvider(titleColor),
+                                fontSize = 11.sp,
+                                fontWeight = if (isInProgress) FontWeight.Bold else FontWeight.Medium
+                            )
                         )
-                    )
-                }
 
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = item.time,
-                        style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF0284C7)),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                        if (statusInfo.timeInfo.isNotBlank()) {
+                            Spacer(modifier = GlanceModifier.defaultWeight())
+                            Text(
+                                text = statusInfo.timeInfo,
+                                style = TextStyle(
+                                    color = androidx.glance.unit.ColorProvider(
+                                        when {
+                                            isInProgress -> Color(0xFF16A34A)
+                                            isNext -> Color(0xFFD97706)
+                                            isPassed -> Color(0xFF94A3B8)
+                                            else -> Color(0xFF64748B)
+                                        }
+                                    ),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = item.time,
+                            style = TextStyle(
+                                color = androidx.glance.unit.ColorProvider(timeColor),
+                                fontSize = 10.sp,
+                                fontWeight = if (isInProgress) FontWeight.Bold else FontWeight.Medium
+                            )
                         )
-                    )
-                    Spacer(modifier = GlanceModifier.width(6.dp))
-                    Text(
-                        text = "• ${item.room}",
-                        maxLines = 1,
-                        style = TextStyle(
-                            color = androidx.glance.unit.ColorProvider(Color(0xFF64748B)),
-                            fontSize = 9.sp
+                        Spacer(modifier = GlanceModifier.width(6.dp))
+                        Text(
+                            text = "• ${item.room}",
+                            maxLines = 1,
+                            style = TextStyle(
+                                color = androidx.glance.unit.ColorProvider(roomColor),
+                                fontSize = 9.sp
+                            )
                         )
-                    )
+                    }
                 }
             }
+        }
+    }
+
+    private fun parseTimeInterval(timeStr: String): Pair<Int, Int>? {
+        return try {
+            val parts = timeStr.split("-")
+            if (parts.size != 2) return null
+            val startParts = parts[0].trim().split(":")
+            val endParts = parts[1].trim().split(":")
+            if (startParts.size != 2 || endParts.size != 2) return null
+            val startMin = startParts[0].toInt() * 60 + startParts[1].toInt()
+            val endMin = endParts[0].toInt() * 60 + endParts[1].toInt()
+            Pair(startMin, endMin)
+        } catch (_: Exception) {
+            null
         }
     }
 
