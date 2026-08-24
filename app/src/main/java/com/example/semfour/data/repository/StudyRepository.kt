@@ -25,9 +25,37 @@ class StudyRepository @Inject constructor(
     private val habitDayDao: HabitDayDao,
     private val scheduleDao: ScheduleDao,
     private val dailyPlanDao: DailyPlanDao,
+    private val quizQuestionDao: QuizQuestionDao,
     private val databaseSeeder: DatabaseSeeder
 ) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+    // ── Quiz & Active Recall Questions ────────────────────────────────────────
+
+    fun getQuestionsForTopic(topicId: String): Flow<List<QuizQuestionEntity>> =
+        quizQuestionDao.getQuestionsForTopic(topicId)
+
+    suspend fun getQuestionsForTopicSync(topicId: String): List<QuizQuestionEntity> =
+        quizQuestionDao.getQuestionsForTopicSync(topicId)
+
+    suspend fun getRandomQuestionsForTopic(topicId: String, limit: Int = 3): List<QuizQuestionEntity> =
+        quizQuestionDao.getRandomQuestionsForTopic(topicId, limit)
+
+    suspend fun insertQuestion(question: QuizQuestionEntity) =
+        quizQuestionDao.insertQuestion(question)
+
+    suspend fun updateQuestion(question: QuizQuestionEntity) =
+        quizQuestionDao.updateQuestion(question)
+
+    suspend fun deleteQuestion(question: QuizQuestionEntity) =
+        quizQuestionDao.deleteQuestion(question)
+
+    suspend fun deleteQuestionById(id: String) =
+        quizQuestionDao.deleteQuestionById(id)
+
+    suspend fun recordQuizAttempt(questionId: String, isCorrect: Boolean) {
+        // En caso de querer registrar métricas por pregunta
+    }
 
     // ── Subjects ──────────────────────────────────────────────────────────────
 

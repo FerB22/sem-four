@@ -122,6 +122,21 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun getQuestionsForTopic(topicId: String): Flow<List<com.example.semfour.data.local.entity.QuizQuestionEntity>> =
+        studyRepository.getQuestionsForTopic(topicId)
+
+    fun saveQuestion(question: com.example.semfour.data.local.entity.QuizQuestionEntity) {
+        viewModelScope.launch {
+            studyRepository.insertQuestion(question)
+        }
+    }
+
+    fun deleteQuestion(question: com.example.semfour.data.local.entity.QuizQuestionEntity) {
+        viewModelScope.launch {
+            studyRepository.deleteQuestion(question)
+        }
+    }
+
     fun saveEvaluation(evaluation: EvaluationEntity) {
         viewModelScope.launch {
             studyRepository.insertEvaluation(evaluation)

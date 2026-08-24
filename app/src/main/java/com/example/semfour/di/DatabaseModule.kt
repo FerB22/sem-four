@@ -33,4 +33,5 @@ object DatabaseModule {
     @Provides fun provideHabitDayDao(db: AppDatabase): HabitDayDao = db.habitDayDao()
     @Provides fun provideScheduleDao(db: AppDatabase): ScheduleDao = db.scheduleDao()
     @Provides fun provideDailyPlanDao(db: AppDatabase): DailyPlanDao = db.dailyPlanDao()
+    @Provides fun provideQuizQuestionDao(db: AppDatabase): QuizQuestionDao = db.quizQuestionDao()
 }

@@ -16,9 +16,10 @@ import com.example.semfour.data.local.entity.*
         EvaluationEntity::class,
         HabitDayEntity::class,
         ScheduleEntity::class,
-        DailyPlanTaskEntity::class
+        DailyPlanTaskEntity::class,
+        QuizQuestionEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun habitDayDao(): HabitDayDao
     abstract fun scheduleDao(): ScheduleDao
     abstract fun dailyPlanDao(): DailyPlanDao
+    abstract fun quizQuestionDao(): QuizQuestionDao
 
     companion object {
         const val DATABASE_NAME = "semfour_db"

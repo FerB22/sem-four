@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.semfour.data.local.entity.SubjectEntity
+import com.example.semfour.data.local.entity.QuizQuestionEntity
 import com.example.semfour.ui.viewmodel.DashboardViewModel
 import com.example.semfour.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -345,11 +346,32 @@ fun SubjectDetailScreen(
 fun TopicDetailScreen(
     topicId: String = "",
     viewModel: DashboardViewModel = hiltViewModel(),
+    onStartQuiz: (topicId: String) -> Unit = {},
     onStartSession: (topicId: String, sessionType: String) -> Unit,
     onBack: () -> Unit
 ) {
     val allTopics by viewModel.prioritizedTopics.collectAsStateWithLifecycle()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val questionsList by viewModel.getQuestionsForTopic(topicId).collectAsStateWithLifecycle(emptyList())
+
+    var questionToEdit by remember { mutableStateOf<QuizQuestionEntity?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    if (showAddDialog || questionToEdit != null) {
+        AddEditQuestionDialog(
+            topicId = topicId,
+            existingQuestion = questionToEdit,
+            onDismiss = {
+                showAddDialog = false
+                questionToEdit = null
+            },
+            onSave = { question ->
+                viewModel.saveQuestion(question)
+                showAddDialog = false
+                questionToEdit = null
+            }
+        )
+    }
 
     val prioritized = remember(allTopics, topicId) {
         allTopics.find { it.topic.id == topicId } ?: allTopics.firstOrNull()
@@ -400,6 +422,130 @@ fun TopicDetailScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(Modifier.height(16.dp))
+
+                            // Botón de Inicio de Quiz Principal
+                            Button(
+                                onClick = { onStartQuiz(topic.id) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                            ) {
+                                Text("🎯 Iniciar Quiz de Preguntas (${questionsList.size})", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // ── Banco de Preguntas del Tema ──
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "📝 Preguntas del Tema (${questionsList.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        FilledTonalButton(
+                            onClick = { showAddDialog = true },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("➕ Añadir", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+
+                if (questionsList.isEmpty()) {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("Sin preguntas aún", fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
+                                Spacer(Modifier.height(4.dp))
+                                Text("Toca '➕ Añadir' para crear tu primera pregunta de repaso.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+                            }
+                        }
+                    }
+                } else {
+                    items(questionsList, key = { it.id }) { question ->
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(if (question.isCustom) Color(0xFFEFF6FF) else Color(0xFFF1F5F9))
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (question.isCustom) "Personalizada" else "Oficial",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (question.isCustom) Color(0xFF2563EB) else Color(0xFF475569),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    if (question.isCustom) {
+                                        Row {
+                                            IconButton(
+                                                onClick = { questionToEdit = question },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(16.dp), tint = Color(0xFF64748B))
+                                            }
+                                            IconButton(
+                                                onClick = { viewModel.deleteQuestion(question) },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(16.dp), tint = Color(0xFFEF4444))
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = question.question,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+
+                                Spacer(Modifier.height(6.dp))
+                                val correctText = when (question.correctOptionIndex) {
+                                    0 -> question.optionA
+                                    1 -> question.optionB
+                                    2 -> question.optionC
+                                    else -> question.optionD
+                                }
+                                Text(
+                                    text = "✓ Respuesta: $correctText",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF16A34A),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -444,7 +590,7 @@ fun TopicDetailScreen(
                 }
 
                 item {
-                    Text("⚡ Iniciar Sesión de Estudio", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("⏱️ Temporizador Alternativo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
 
                 item {

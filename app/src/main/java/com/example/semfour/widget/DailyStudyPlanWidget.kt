@@ -114,7 +114,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "📖 ESTUDIO DE HOY",
+                        text = "🎯 REPASO DE HOY",
                         style = TextStyle(
                             color = glanceColor(Color(0xFF0F172A)),
                             fontSize = 11.sp,
@@ -232,7 +232,7 @@ class DailyStudyPlanWidget : GlanceAppWidget() {
                     Spacer(modifier = GlanceModifier.height(2.dp))
 
                     Text(
-                        text = "📄 ${task.notebookFile}",
+                        text = if (task.notebookFile.endsWith(".ipynb")) "🎯 ${task.notebookFile.removeSuffix(".ipynb").replace("_", " ")}" else "🎯 ${task.notebookFile}",
                         style = TextStyle(
                             color = glanceColor(
                                 if (task.isCompleted) Color(0xFF94A3B8) else Color(0xFF475569)

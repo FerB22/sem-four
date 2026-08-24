@@ -42,6 +42,11 @@ sealed class Screen(val route: String) {
         Screen("session/{topicId}/{sessionType}") {
         fun createRoute(topicId: String, type: String) = "session/$topicId/$type"
     }
+
+    data class Quiz(val topicId: String = "{topicId}") :
+        Screen("quiz/{topicId}") {
+        fun createRoute(topicId: String) = "quiz/$topicId"
+    }
 }
 
 private data class BottomNavItem(
@@ -136,9 +141,35 @@ fun SemFourApp() {
             val topicId = backStackEntry.arguments?.getString("topicId") ?: ""
             TopicDetailScreen(
                 topicId = topicId,
+                onStartQuiz = { id ->
+                    navController.navigate(Screen.Quiz().createRoute(id))
+                },
                 onStartSession = { id, sessionType ->
                     navController.navigate(Screen.StudySession().createRoute(id, sessionType))
                 },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Sub-pantalla: Quiz / Repaso Activo de Preguntas ──
+        composable(
+            route = Screen.Quiz().route,
+            arguments = listOf(navArgument("topicId") { type = NavType.StringType }),
+            enterTransition = {
+                slideInVertically(tween(280, easing = EaseOutCubic)) { it / 4 } + fadeIn(tween(240))
+            },
+            exitTransition = {
+                slideOutVertically(tween(220, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(220))
+            },
+            popEnterTransition = {
+                fadeIn(tween(200))
+            },
+            popExitTransition = {
+                slideOutVertically(tween(220, easing = EaseInCubic)) { it / 4 } + fadeOut(tween(220))
+            }
+        ) {
+            QuizStudyScreen(
+                onFinish = { navController.popBackStack() },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -243,6 +274,9 @@ private fun MainPagerScreen(navController: NavController) {
         ) { page ->
             when (page) {
                 0 -> DashboardScreen(
+                    onStartQuiz = { topicId ->
+                        navController.navigate(Screen.Quiz().createRoute(topicId))
+                    },
                     onStartSession = { topicId, sessionType ->
                         navController.navigate(Screen.StudySession().createRoute(topicId, sessionType))
                     },

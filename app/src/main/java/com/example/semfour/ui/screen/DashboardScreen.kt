@@ -40,6 +40,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
+    onStartQuiz: (topicId: String) -> Unit = {},
     onStartSession: (topicId: String, sessionType: String) -> Unit,
     onOpenSubject: (subjectId: String) -> Unit
 ) {
@@ -141,6 +142,9 @@ fun DashboardScreen(
                 PriorityTopicCard(
                     prioritizedTopic = priority,
                     subject = subject,
+                    onStartQuiz = {
+                        onStartQuiz(priority.topic.id)
+                    },
                     onStartMicro = {
                         onStartSession(priority.topic.id, SessionType.MICRO.name)
                     },
@@ -285,7 +289,7 @@ fun DashboardScreen(
                 TopicQueueItem(
                     prioritizedTopic = priority,
                     subject = subject,
-                    onStart = { onStartSession(priority.topic.id, SessionType.MICRO.name) }
+                    onStartQuiz = { onStartQuiz(priority.topic.id) }
                 )
             }
 
@@ -631,6 +635,7 @@ private fun DashboardHeader(
 private fun PriorityTopicCard(
     prioritizedTopic: PrioritizedTopic,
     subject: SubjectEntity?,
+    onStartQuiz: () -> Unit,
     onStartMicro: () -> Unit,
     onStartPomodoro: () -> Unit
 ) {
@@ -728,25 +733,23 @@ private fun PriorityTopicCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Button(
+                    onClick = onStartQuiz,
+                    modifier = Modifier.weight(1.3f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                ) {
+                    Text("🎯 Iniciar Quiz", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+
                 OutlinedButton(
                     onClick = onStartMicro,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(0.8f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Bolt, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Micro (5 min)", fontSize = 13.sp)
-                }
-
-                Button(
-                    onClick = onStartPomodoro,
-                    modifier = Modifier.weight(1.2f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = subjectColor)
-                ) {
-                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Pomodoro", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("5 min", fontSize = 13.sp)
                 }
             }
         }
@@ -900,7 +903,7 @@ private fun EvaluationCard(
 private fun TopicQueueItem(
     prioritizedTopic: PrioritizedTopic,
     subject: SubjectEntity?,
-    onStart: () -> Unit
+    onStartQuiz: () -> Unit
 ) {
     val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
 
@@ -932,14 +935,18 @@ private fun TopicQueueItem(
             }
         },
         trailingContent = {
-            IconButton(onClick = onStart) {
-                Icon(Icons.Default.PlayArrow, "Estudiar", tint = color)
+            FilledTonalButton(
+                onClick = onStartQuiz,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("🎯 Quiz", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
         },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-            .clickable { onStart() }
+            .clickable { onStartQuiz() }
     )
 }
 

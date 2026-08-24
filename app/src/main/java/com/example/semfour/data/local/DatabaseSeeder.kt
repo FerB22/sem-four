@@ -1,5 +1,6 @@
 package com.example.semfour.data.local
 
+import com.example.semfour.data.local.dao.QuizQuestionDao
 import com.example.semfour.data.local.dao.DailyPlanDao
 import com.example.semfour.data.local.dao.EvaluationDao
 import com.example.semfour.data.local.dao.ScheduleDao
@@ -23,7 +24,8 @@ class DatabaseSeeder @Inject constructor(
     private val topicDao: TopicDao,
     private val evaluationDao: EvaluationDao,
     private val scheduleDao: ScheduleDao,
-    private val dailyPlanDao: DailyPlanDao
+    private val dailyPlanDao: DailyPlanDao,
+    private val quizQuestionDao: QuizQuestionDao
 ) {
     companion object {
         const val UN_DIA_MS = 86_400_000L
@@ -119,6 +121,11 @@ class DatabaseSeeder @Inject constructor(
         // ── 4. Cronograma Diario de Estudio (16 Semanas) ────────────────────
         if (dailyPlanDao.getTaskCount() == 0) {
             dailyPlanDao.insertTasks(StudyPlanCatalog.generateAllTasks())
+        }
+
+        // ── 5. Banco Oficial de Preguntas de Estudio (Quiz / Active Recall) ──
+        if (quizQuestionDao.count() == 0) {
+            quizQuestionDao.insertQuestions(QuestionBankCatalog.getAllOfficialQuestions())
         }
     }
 
