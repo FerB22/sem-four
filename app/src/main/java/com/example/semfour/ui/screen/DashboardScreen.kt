@@ -323,6 +323,8 @@ private fun TodayClassesBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val cal = remember { Calendar.getInstance() }
+    val currentMinutes = remember { cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -359,10 +361,65 @@ private fun TodayClassesBottomSheet(
 
             Spacer(Modifier.height(16.dp))
 
+            var foundNext = false
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 classes.forEach { scheduleItem ->
                     val subject = subjectMap[scheduleItem.subjectId]
-                    val color = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+                    val baseColor = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+
+                    val startMin = parseScheduleTimeToMinutes(scheduleItem.startTime)
+                    val endMin = parseScheduleTimeToMinutes(scheduleItem.endTime)
+
+                    val isPassed = startMin != null && endMin != null && currentMinutes > endMin
+                    val isInProgress = startMin != null && endMin != null && currentMinutes in startMin..endMin
+                    var isNext = false
+                    var badgeText = ""
+                    var badgeColor = Color(0xFF64748B)
+
+                    when {
+                        isPassed -> {
+                            badgeText = "✓ Finalizada"
+                            badgeColor = Color(0xFF94A3B8)
+                        }
+                        isInProgress -> {
+                            val remaining = maxOf(1, endMin!! - currentMinutes)
+                            badgeText = "⏱️ Termina en ${remaining}m"
+                            badgeColor = Color(0xFF16A34A)
+                        }
+                        startMin != null && currentMinutes < startMin -> {
+                            if (!foundNext) {
+                                foundNext = true
+                                isNext = true
+                                val diff = maxOf(1, startMin - currentMinutes)
+                                badgeText = if (diff >= 60) {
+                                    val h = diff / 60
+                                    val m = diff % 60
+                                    if (m > 0) "⏳ En ${h}h ${m}m" else "⏳ En ${h}h"
+                                } else {
+                                    "⏳ En ${diff}m"
+                                }
+                                badgeColor = Color(0xFFD97706)
+                            }
+                        }
+                    }
+
+                    val cardBg = when {
+                        isInProgress -> Color(0xFFF0FDF4)
+                        isNext -> Color(0xFFFFFBEB)
+                        isPassed -> Color(0xFFF8FAFC)
+                        else -> Color(0xFFF8FAFC)
+                    }
+
+                    val borderColor = when {
+                        isInProgress -> Color(0xFF86EFAC)
+                        isNext -> Color(0xFFFDE68A)
+                        else -> Color(0xFFE2E8F0)
+                    }
+
+                    val barColor = if (isPassed) Color(0xFFCBD5E1) else baseColor
+                    val titleColor = if (isPassed) Color(0xFF94A3B8) else Color(0xFF0F172A)
+                    val timeTextColor = if (isPassed) Color(0xFF94A3B8) else if (isInProgress) Color(0xFF16A34A) else baseColor
+                    val detailsTextColor = if (isPassed) Color(0xFF94A3B8) else Color(0xFF475569)
 
                     Card(
                         onClick = {
@@ -370,8 +427,8 @@ private fun TodayClassesBottomSheet(
                             onDismiss()
                         },
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        colors = CardDefaults.cardColors(containerColor = cardBg),
+                        border = BorderStroke(1.dp, borderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -383,46 +440,75 @@ private fun TodayClassesBottomSheet(
                             Box(
                                 modifier = Modifier
                                     .width(4.dp)
-                                    .height(44.dp)
+                                    .height(48.dp)
                                     .clip(RoundedCornerShape(2.dp))
-                                    .background(color)
+                                    .background(barColor)
                             )
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "${scheduleItem.startTime} - ${scheduleItem.endTime}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = color
-                                    )
-                                    if (subject?.codigo?.isNotBlank() == true) {
-                                        Spacer(Modifier.width(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "• ${subject.codigo}",
+                                            text = "${scheduleItem.startTime} - ${scheduleItem.endTime}",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Color(0xFF64748B)
+                                            fontWeight = FontWeight.Bold,
+                                            color = timeTextColor
                                         )
+                                        if (subject?.codigo?.isNotBlank() == true) {
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                text = "• ${subject.codigo}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (isPassed) Color(0xFFCBD5E1) else Color(0xFF64748B)
+                                            )
+                                        }
+                                    }
+
+                                    if (badgeText.isNotBlank()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(
+                                                    when {
+                                                        isInProgress -> Color(0xFFDCFCE7)
+                                                        isNext -> Color(0xFFFEF3C7)
+                                                        else -> Color(0xFFF1F5F9)
+                                                    }
+                                                )
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = badgeText,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = badgeColor,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
+
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     text = subject?.nombre ?: "Asignatura",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    fontWeight = if (isInProgress) FontWeight.ExtraBold else FontWeight.Bold,
+                                    color = titleColor
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     text = "📍 ${scheduleItem.room} • 👨‍🏫 ${scheduleItem.professor}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF475569)
+                                    color = detailsTextColor
                                 )
                             }
                             Icon(
                                 Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = if (isPassed) Color(0xFFCBD5E1) else Color(0xFF94A3B8),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -1132,5 +1218,18 @@ private fun DailyStudyPlanSection(
                 )
             }
         }
+    }
+}
+
+fun parseScheduleTimeToMinutes(timeStr: String): Int? {
+    return try {
+        val parts = timeStr.trim().split(":")
+        if (parts.size >= 2) {
+            val h = parts[0].trim().toInt()
+            val m = parts[1].trim().toInt()
+            h * 60 + m
+        } else null
+    } catch (_: Exception) {
+        null
     }
 }

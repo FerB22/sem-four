@@ -170,14 +170,62 @@ fun ScheduleScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    val cal = java.util.Calendar.getInstance()
+                    val currentMinutes = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+                    val isToday = currentDay == selectedDay
+                    var foundNext = false
+
                     items(daySchedule, key = { it.id }) { scheduleItem ->
                         val subject = subjects.find { it.id == scheduleItem.subjectId }
                         val subjectColor = subject?.let { parseHexColor(it.color) } ?: MaterialTheme.colorScheme.primary
+
+                        val startMin = parseScheduleTimeToMinutes(scheduleItem.startTime)
+                        val endMin = parseScheduleTimeToMinutes(scheduleItem.endTime)
+
+                        val isPassed = isToday && startMin != null && endMin != null && currentMinutes > endMin
+                        val isInProgress = isToday && startMin != null && endMin != null && currentMinutes in startMin..endMin
+                        var isNext = false
+                        var badgeText = ""
+                        var badgeColor = Color(0xFF64748B)
+
+                        if (isToday) {
+                            when {
+                                isPassed -> {
+                                    badgeText = "✓ Finalizada"
+                                    badgeColor = Color(0xFF94A3B8)
+                                }
+                                isInProgress -> {
+                                    val remaining = maxOf(1, endMin!! - currentMinutes)
+                                    badgeText = "⏱️ Termina en ${remaining}m"
+                                    badgeColor = Color(0xFF16A34A)
+                                }
+                                startMin != null && currentMinutes < startMin -> {
+                                    if (!foundNext) {
+                                        foundNext = true
+                                        isNext = true
+                                        val diff = maxOf(1, startMin - currentMinutes)
+                                        badgeText = if (diff >= 60) {
+                                            val h = diff / 60
+                                            val m = diff % 60
+                                            if (m > 0) "⏳ En ${h}h ${m}m" else "⏳ En ${h}h"
+                                        } else {
+                                            "⏳ En ${diff}m"
+                                        }
+                                        badgeColor = Color(0xFFD97706)
+                                    }
+                                }
+                            }
+                        }
 
                         ScheduleCard(
                             schedule = scheduleItem,
                             subject = subject,
                             subjectColor = subjectColor,
+                            isPassed = isPassed,
+                            isInProgress = isInProgress,
+                            isNext = isNext,
+                            badgeText = badgeText,
+                            badgeColor = badgeColor,
                             onClick = {
                                 if (subject != null) onSubjectClick(subject.id)
                             }
@@ -194,16 +242,37 @@ private fun ScheduleCard(
     schedule: ScheduleEntity,
     subject: SubjectEntity?,
     subjectColor: Color,
+    isPassed: Boolean = false,
+    isInProgress: Boolean = false,
+    isNext: Boolean = false,
+    badgeText: String = "",
+    badgeColor: Color = Color(0xFF64748B),
     onClick: () -> Unit
 ) {
+    val barColor = if (isPassed) Color(0xFFCBD5E1) else subjectColor
+    val titleColor = if (isPassed) Color(0xFF94A3B8) else MaterialTheme.colorScheme.onSurface
+    val timeTextColor = if (isPassed) Color(0xFF94A3B8) else if (isInProgress) Color(0xFF16A34A) else subjectColor
+    val detailsTextColor = if (isPassed) Color(0xFF94A3B8) else MaterialTheme.colorScheme.onSurfaceVariant
+
+    val cardBg = when {
+        isInProgress -> Color(0xFFF0FDF4)
+        isNext -> Color(0xFFFFFBEB)
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val cardBorder = when {
+        isInProgress -> androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC))
+        isNext -> androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A))
+        else -> null
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = cardBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isInProgress) 4.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -217,13 +286,13 @@ private fun ScheduleCard(
                     .width(4.dp)
                     .height(68.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(subjectColor)
+                    .background(barColor)
             )
 
             Spacer(Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Horario + Código
+                // Horario + Código + Badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -234,28 +303,50 @@ private fun ScheduleCard(
                             imageVector = Icons.Default.AccessTime,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = subjectColor
+                            tint = timeTextColor
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = "${schedule.startTime} - ${schedule.endTime}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = subjectColor
+                            color = timeTextColor
                         )
                     }
 
-                    Surface(
-                        color = subjectColor.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = subject?.codigo ?: "",
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = subjectColor
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (badgeText.isNotBlank()) {
+                            Surface(
+                                color = when {
+                                    isInProgress -> Color(0xFFDCFCE7)
+                                    isNext -> Color(0xFFFEF3C7)
+                                    else -> Color(0xFFF1F5F9)
+                                },
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = badgeText,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = badgeColor
+                                )
+                            }
+                            Spacer(Modifier.width(6.dp))
+                        }
+
+                        Surface(
+                            color = if (isPassed) Color(0xFFE2E8F0) else subjectColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = subject?.codigo ?: "",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPassed) Color(0xFF94A3B8) else subjectColor
+                            )
+                        }
                     }
                 }
 
@@ -265,7 +356,8 @@ private fun ScheduleCard(
                 Text(
                     text = subject?.nombre ?: "Asignatura",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = if (isInProgress) FontWeight.ExtraBold else FontWeight.Bold,
+                    color = titleColor,
                     maxLines = 1
                 )
 
@@ -277,13 +369,13 @@ private fun ScheduleCard(
                         imageVector = Icons.Default.MeetingRoom,
                         contentDescription = null,
                         modifier = Modifier.size(13.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = detailsTextColor
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = schedule.room,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = detailsTextColor,
                         fontSize = 11.sp
                     )
                 }
@@ -295,13 +387,13 @@ private fun ScheduleCard(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
                         modifier = Modifier.size(13.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = detailsTextColor
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = schedule.professor,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = detailsTextColor,
                         fontSize = 11.sp
                     )
                 }
