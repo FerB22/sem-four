@@ -156,6 +156,7 @@ fun SubjectDetailScreen(
     subjectId: String = "",
     viewModel: DashboardViewModel = hiltViewModel(),
     onTopicClick: (String) -> Unit,
+    onStartQuiz: (topicId: String) -> Unit = {},
     onStartSession: (topicId: String, sessionType: String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -270,11 +271,17 @@ fun SubjectDetailScreen(
 
             items(subjectTopics, key = { it.topic.id }) { prioritized ->
                 val topic = prioritized.topic
+                val isCompletedRecently = topic.ultimoRepaso != null && !prioritized.estaVencido
+                val nextDays = maxOf(1, Math.ceil(-prioritized.diasVencido).toInt())
+
                 Card(
                     onClick = { onTopicClick(topic.id) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isCompletedRecently) Color(0xFFF8FAFC) else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    border = if (isCompletedRecently) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)) else null
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -300,13 +307,22 @@ fun SubjectDetailScreen(
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                Spacer(Modifier.height(2.dp))
                                 Text(
-                                    text = if (prioritized.estaVencido) "⚠️ Repaso vencido"
-                                    else if (prioritized.esNuevo) "✨ Nuevo para aprender"
-                                    else "Próximo repaso en ${(-prioritized.diasVencido).toInt()} días",
+                                    text = when {
+                                        prioritized.estaVencido -> "⚠️ Repaso vencido"
+                                        prioritized.esNuevo -> "✨ Nuevo para aprender"
+                                        isCompletedRecently && nextDays == 1 -> "✓ Repasado • Próximo repaso mañana"
+                                        isCompletedRecently -> "✓ Al día • Próximo repaso en $nextDays días"
+                                        else -> "Próximo repaso en $nextDays días"
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (prioritized.estaVencido) Color(0xFFFF6B6B)
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = when {
+                                        prioritized.estaVencido -> Color(0xFFFF6B6B)
+                                        isCompletedRecently -> Color(0xFF16A34A)
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    fontWeight = if (isCompletedRecently) FontWeight.Medium else FontWeight.Normal
                                 )
                             }
                         }
@@ -314,22 +330,28 @@ fun SubjectDetailScreen(
                         Spacer(Modifier.height(12.dp))
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = { onStartSession(topic.id, "MICRO") },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(vertical = 6.dp)
-                            ) {
-                                Text("⚡ 5 min", style = MaterialTheme.typography.labelMedium)
-                            }
                             Button(
-                                onClick = { onStartSession(topic.id, "POMODORO") },
+                                onClick = { onStartQuiz(topic.id) },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = subjectColor),
-                                contentPadding = PaddingValues(vertical = 6.dp)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isCompletedRecently) subjectColor.copy(alpha = 0.85f) else subjectColor
+                                ),
+                                contentPadding = PaddingValues(vertical = 8.dp)
                             ) {
-                                Text("🍅 25 min", style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    if (isCompletedRecently) "🔄 Practicar Quiz" else "🎯 Iniciar Quiz",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = { onStartSession(topic.id, "POMODORO") },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text("🍅 25m", style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     }

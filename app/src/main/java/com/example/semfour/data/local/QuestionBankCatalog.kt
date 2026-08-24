@@ -385,6 +385,17 @@ object QuestionBankCatalog {
             correctOptionIndex = 0,
             explanation = "Un VARRAY (Variable-Size Array) almacena una cantidad acotada y ordenada de elementos homogéneos en memoria."
         ),
+        QuizQuestionEntity(
+            id = "q_bd_1_3",
+            topicId = "top_bd_1",
+            question = "¿Cómo se accede o asigna un valor a un campo individual dentro de una variable de tipo RECORD en PL/SQL?",
+            optionA = "Mediante la notación de punto: variable_record.nombre_campo",
+            optionB = "Con corchetes: variable_record['campo']",
+            optionC = "Con una flecha: variable_record->campo",
+            optionD = "No se puede acceder individualmente",
+            correctOptionIndex = 0,
+            explanation = "Al igual que en los objetos de programación, en PL/SQL se utiliza el punto (ej: v_empleado.salario := 500000;)."
+        ),
 
         // top_bd_2: Cursores Complejos y con Parámetros
         QuizQuestionEntity(
@@ -408,6 +419,17 @@ object QuestionBankCatalog {
             optionD = "No es necesario cerrar cursores explícitos",
             correctOptionIndex = 0,
             explanation = "Dejar cursores abiertos agota los recursos del servidor y puede provocar el error ORA-01000 (maximum open cursors exceeded)."
+        ),
+        QuizQuestionEntity(
+            id = "q_bd_2_3",
+            topicId = "top_bd_2",
+            question = "¿Qué estructura de control simplifica el manejo de un cursor abriéndolo, extrayendo las filas (fetch) y cerrándolo automáticamente?",
+            optionA = "El ciclo FOR registro IN nombre_cursor LOOP ... END LOOP;",
+            optionB = "El ciclo WHILE (cursor == open)",
+            optionC = "La sentencia IF MATCH",
+            optionD = "El comando TRY-CATCH",
+            correctOptionIndex = 0,
+            explanation = "El cursor FOR LOOP gestiona de forma automática la apertura (OPEN), extracción de registros (FETCH) y cierre (CLOSE) del cursor sin código manual."
         ),
 
         // top_bd_3: Manejo de Excepciones Predefinidas y Definidas por el Usuario
@@ -457,6 +479,17 @@ object QuestionBankCatalog {
             correctOptionIndex = 0,
             explanation = "Las funciones están diseñadas para calcular y retornar un único valor (RETURN type) y pueden ser invocadas dentro de SELECT, WHERE, etc."
         ),
+        QuizQuestionEntity(
+            id = "q_bd_4_2",
+            topicId = "top_bd_4",
+            question = "¿Qué modo de parámetro permite enviar un valor al procedimiento, modificarlo dentro y devolver el nuevo valor hacia quien lo llamó?",
+            optionA = "IN OUT",
+            optionB = "IN (modo por defecto, solo lectura)",
+            optionC = "OUT (solo escritura de salida)",
+            optionD = "RETURN ONLY",
+            correctOptionIndex = 0,
+            explanation = "El modo 'IN OUT' pasa una variable tanto de entrada como de salida, permitiendo que el procedimiento lea su valor inicial y lo sobreescriba con un resultado."
+        ),
 
         // top_bd_5: Paquetes y Triggers
         QuizQuestionEntity(
@@ -480,6 +513,17 @@ object QuestionBankCatalog {
             optionD = ":NEXT",
             correctOptionIndex = 0,
             explanation = "':NEW.columna' contiene el nuevo valor que se va a guardar en la fila, mientras que ':OLD.columna' contiene el valor anterior previo a la modificación."
+        ),
+        QuizQuestionEntity(
+            id = "q_bd_5_3",
+            topicId = "top_bd_5",
+            question = "¿En qué momentos o eventos DML puede dispararse automáticamente un Trigger en Oracle?",
+            optionA = "BEFORE o AFTER de operaciones INSERT, UPDATE o DELETE",
+            optionB = "Únicamente cuando se apaga la computadora",
+            optionC = "Solo los fines de semana a medianoche",
+            optionD = "Cuando se instala un programa en Windows",
+            correctOptionIndex = 0,
+            explanation = "Los triggers se ejecutan automáticamente antes (BEFORE) o después (AFTER) de modificar datos en una tabla con INSERT, UPDATE o DELETE."
         ),
 
         // ══════════════════════════════════════════════════════════════════════════

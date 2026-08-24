@@ -114,6 +114,9 @@ fun SemFourApp() {
                 onTopicClick = { topicId ->
                     navController.navigate(Screen.TopicDetail().createRoute(topicId))
                 },
+                onStartQuiz = { topicId ->
+                    navController.navigate(Screen.Quiz(topicId).createRoute(topicId))
+                },
                 onStartSession = { topicId, sessionType ->
                     navController.navigate(Screen.StudySession().createRoute(topicId, sessionType))
                 },
