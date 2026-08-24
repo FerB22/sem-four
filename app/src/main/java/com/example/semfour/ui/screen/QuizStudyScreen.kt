@@ -186,7 +186,39 @@ private fun QuizQuestionContent(
             trackColor = Color(0xFFE2E8F0)
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Tarjeta Didáctica: Concepto Teórico Clave (Aprender antes de responder)
+        if (question.theoryContext.isNotBlank()) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📖", fontSize = 18.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Concepto Clave",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E40AF)
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = question.theoryContext,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF1E3A8A),
+                        lineHeight = 21.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+        }
 
         // Tarjeta del Enunciado de la Pregunta
         Card(
@@ -195,7 +227,22 @@ private fun QuizQuestionContent(
             border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "🎯 Pregunta",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = question.question,
                     style = MaterialTheme.typography.titleMedium,

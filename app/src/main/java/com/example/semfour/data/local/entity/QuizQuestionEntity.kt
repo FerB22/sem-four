@@ -28,6 +28,8 @@ import kotlinx.serialization.Serializable
 data class QuizQuestionEntity(
     @PrimaryKey val id: String,
     val topicId: String,
+    /** Concepto explicativo o lección que enseña la teoría antes de responder */
+    val theoryContext: String = "",
     val question: String,
     val optionA: String,
     val optionB: String,

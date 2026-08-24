@@ -23,6 +23,7 @@ fun AddEditQuestionDialog(
     onDismiss: () -> Unit,
     onSave: (QuizQuestionEntity) -> Unit
 ) {
+    var theoryContext by remember { mutableStateOf(existingQuestion?.theoryContext ?: "") }
     var questionText by remember { mutableStateOf(existingQuestion?.question ?: "") }
     var optionA by remember { mutableStateOf(existingQuestion?.optionA ?: "") }
     var optionB by remember { mutableStateOf(existingQuestion?.optionB ?: "") }
@@ -56,12 +57,26 @@ fun AddEditQuestionDialog(
                 )
 
                 Text(
-                    text = "Añade una pregunta de opción múltiple para repasar este tema.",
+                    text = "Añade una micro-lección y una pregunta de opción múltiple para repasar este tema.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF64748B)
                 )
 
                 Spacer(Modifier.height(16.dp))
+
+                // Micro-lección / Concepto clave (Opcional)
+                OutlinedTextField(
+                    value = theoryContext,
+                    onValueChange = { theoryContext = it },
+                    label = { Text("📖 Concepto Clave a Enseñar (Opcional)") },
+                    placeholder = { Text("Ej: En Kotlin, 'val' define una variable inmutable que no puede reasignarse.") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(Modifier.height(12.dp))
 
                 // Enunciado
                 OutlinedTextField(
@@ -197,6 +212,7 @@ fun AddEditQuestionDialog(
                                 val questionToSave = (existingQuestion ?: QuizQuestionEntity(
                                     id = "custom_q_" + UUID.randomUUID().toString().take(8),
                                     topicId = topicId,
+                                    theoryContext = theoryContext.trim(),
                                     question = questionText.trim(),
                                     optionA = optionA.trim(),
                                     optionB = optionB.trim(),
@@ -206,6 +222,7 @@ fun AddEditQuestionDialog(
                                     explanation = explanation.trim(),
                                     isCustom = true
                                 )).copy(
+                                    theoryContext = theoryContext.trim(),
                                     question = questionText.trim(),
                                     optionA = optionA.trim(),
                                     optionB = optionB.trim(),

@@ -19,7 +19,7 @@ import com.example.semfour.data.local.entity.*
         DailyPlanTaskEntity::class,
         QuizQuestionEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
