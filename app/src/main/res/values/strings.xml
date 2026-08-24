@@ -3,5 +3,5 @@
     <string name="widget_priority_description">Muestra el tema prioritario para repasar hoy con botón de acción rápida.</string>
     <string name="widget_streak_description">Muestra tu racha diaria y progreso de estudio.</string>
     <string name="widget_schedule_description">Muestra tu horario semanal de clases completo con salas y profesores.</string>
-    <string name="widget_plan_description">Muestra los cuadernos .ipynb que debes estudiar hoy según tu cronograma semanal.</string>
+    <string name="widget_plan_description">Muestra los temas y asignaturas que te corresponde repasar hoy según tu cronograma semanal.</string>
 </resources>

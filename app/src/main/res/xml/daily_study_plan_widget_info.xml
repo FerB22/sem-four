@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="140dp"
-    android:minHeight="40dp"
+    android:minWidth="240dp"
+    android:minHeight="80dp"
     android:minResizeHeight="40dp"
     android:targetCellWidth="4"
-    android:targetCellHeight="1"
+    android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
     android:description="@string/widget_plan_description"
     android:previewLayout="@layout/widget_plan_preview"
-    android:initialLayout="@layout/glance_default_loading_layout" />
+    android:initialLayout="@layout/widget_plan_preview" />

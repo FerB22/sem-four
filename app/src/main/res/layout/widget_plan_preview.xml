@@ -17,7 +17,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="📖 ESTUDIO DE HOY"
+            android:text="🎯 REPASO DE HOY"
             android:textColor="#0F172A"
             android:textSize="11sp"
             android:textStyle="bold" />
@@ -46,10 +46,10 @@
         android:orientation="horizontal"
         android:padding="6dp">
 
-        <View
+        <ImageView
             android:layout_width="3dp"
             android:layout_height="24dp"
-            android:background="#3949AB" />
+            android:src="@drawable/widget_bar_indigo" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -71,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="📄 Semana_01_Dignidad_Humana.ipynb"
+                android:text="🎯 1.1 Dimensión Humana y Moral"
                 android:textColor="#64748B"
                 android:textSize="9sp" />
         </LinearLayout>
@@ -87,10 +87,10 @@
         android:orientation="horizontal"
         android:padding="6dp">
 
-        <View
+        <ImageView
             android:layout_width="3dp"
             android:layout_height="24dp"
-            android:background="#0284C7" />
+            android:src="@drawable/widget_bar_blue" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -112,7 +112,7 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="📄 Semana_01_HTML5_Semantico.ipynb"
+                android:text="🎯 1.1 HTML5 Semántico y Formularios"
                 android:textColor="#64748B"
                 android:textSize="9sp" />
         </LinearLayout>

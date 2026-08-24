@@ -8,4 +8,4 @@
     android:updatePeriodMillis="1800000"
     android:description="@string/widget_streak_description"
     android:previewLayout="@layout/widget_streak_preview"
-    android:initialLayout="@layout/glance_default_loading_layout" />
+    android:initialLayout="@layout/widget_streak_preview" />
