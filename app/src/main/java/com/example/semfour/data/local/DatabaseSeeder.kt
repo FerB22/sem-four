@@ -124,9 +124,7 @@ class DatabaseSeeder @Inject constructor(
         }
 
         // ── 5. Banco Oficial de Preguntas de Estudio (Quiz / Active Recall) ──
-        if (quizQuestionDao.count() == 0) {
-            quizQuestionDao.insertQuestions(QuestionBankCatalog.getAllOfficialQuestions())
-        }
+        quizQuestionDao.insertQuestions(QuestionBankCatalog.getAllOfficialQuestions())
     }
 
     // ── MÉTODOS DE ACTIVACIÓN / DESACTIVACIÓN DINÁMICA ─────────────────────────

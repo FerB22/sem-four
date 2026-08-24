@@ -582,67 +582,245 @@ object QuestionBankCatalog {
         // ══════════════════════════════════════════════════════════════════════════
         // ESTADÍSTICA DESCRIPTIVA (MAT4141 - PYTHON/PANDAS)
         // ══════════════════════════════════════════════════════════════════════════
-        // top_est_1: Python y Pandas
+        // top_est_1: Python y Pandas para Estadística
         QuizQuestionEntity(
             id = "q_est_1_1",
             topicId = "top_est_1",
-            question = "¿Qué método en Pandas muestra un resumen estadístico completo (conteo, media, desv. estándar, cuartiles, min/max) de las columnas numéricas?",
-            optionA = "df.describe()",
-            optionB = "df.info()",
-            optionC = "df.summary()",
-            optionD = "df.head()",
+            question = "¿Qué método de Pandas se utiliza en una columna categórica para obtener el conteo exacto de repeticiones (frecuencias absolutas) de cada categoría?",
+            optionA = "df['columna'].value_counts()",
+            optionB = "df['columna'].count_unique()",
+            optionC = "df['columna'].sum_values()",
+            optionD = "df['columna'].freq()",
             correctOptionIndex = 0,
-            explanation = "df.describe() calcula instantáneamente los principales estadísticos descriptivos de todas las columnas numéricas de un DataFrame."
+            explanation = "'.value_counts()' cuenta y ordena automáticamente de mayor a menor las frecuencias de cada categoría en una Serie de Pandas."
         ),
         QuizQuestionEntity(
             id = "q_est_1_2",
             topicId = "top_est_1",
-            question = "¿Cuál es la diferencia entre una Serie (Series) y un DataFrame en Pandas?",
+            question = "¿Qué información devuelve por defecto el método 'df.describe()' sobre las columnas numéricas de un DataFrame?",
+            optionA = "Conteo, media, desviación estándar, valor mínimo, percentiles 25% (Q1), 50% (mediana), 75% (Q3) y valor máximo",
+            optionB = "Solo la suma total y el promedio",
+            optionC = "Los nombres de las columnas y sus tipos de datos en memoria",
+            optionD = "Una lista de valores nulos ordenados alfabéticamente",
+            correctOptionIndex = 0,
+            explanation = "'.describe()' genera de forma instantánea el resumen de los 8 principales estadísticos descriptivos de todas las variables numéricas."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_1_3",
+            topicId = "top_est_1",
+            question = "Para calcular el promedio de sueldos agrupado por cada departamento en un DataFrame 'df', ¿cuál es la sintaxis correcta en Pandas?",
+            optionA = "df.groupby('departamento')['sueldo'].mean()",
+            optionB = "df.filter('departamento').average('sueldo')",
+            optionC = "df.split('departamento').mean()",
+            optionD = "df.aggregate('sueldo', by='departamento')",
+            correctOptionIndex = 0,
+            explanation = "'.groupby('columna_agrupadora')['columna_a_calcular'].mean()' agrupa las filas y aplica la función estadística seleccionada."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_1_4",
+            topicId = "top_est_1",
+            question = "¿Cómo se seleccionan en Pandas todas las filas donde la variable 'edad' sea mayor o igual a 18 en un DataFrame 'df'?",
+            optionA = "df[df['edad'] >= 18]",
+            optionB = "df.where('edad >= 18')",
+            optionC = "df.filter(edad >= 18)",
+            optionD = "df.select('edad >= 18')",
+            correctOptionIndex = 0,
+            explanation = "La indexación booleana 'df[condicion]' filtra y retorna únicamente las filas que cumplen la condición como True."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_1_5",
+            topicId = "top_est_1",
+            question = "¿Qué instrucción permite conocer la cantidad de datos faltantes (nulos) por cada columna en un DataFrame 'df'?",
+            optionA = "df.isna().sum()",
+            optionB = "df.null_count()",
+            optionC = "df.missing()",
+            optionD = "df.empty_cells()",
+            correctOptionIndex = 0,
+            explanation = "'.isna()' (o '.isnull()') retorna una máscara booleana y '.sum()' suma los valores True (1) obteniendo el total de nulos por columna."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_1_6",
+            topicId = "top_est_1",
+            question = "¿Cuál es la diferencia estructural entre una Serie (Series) y un DataFrame en Pandas?",
             optionA = "Una Serie es una estructura unidimensional (1 sola columna con índice) y un DataFrame es bidimensional tabular (filas y columnas)",
             optionB = "La Serie almacena gráficos y el DataFrame números",
             optionC = "El DataFrame no tiene índices",
             optionD = "Una Serie solo admite números enteros",
             correctOptionIndex = 0,
-            explanation = "Una Series es como un array unidimensional etiquetado; un DataFrame es una tabla 2D compuesta por múltiples Series como columnas."
+            explanation = "Una Series es un vector 1D indexado; un DataFrame es una tabla 2D compuesta por múltiples Series alineadas por índice."
         ),
 
-        // top_est_2: Clasificación de Variables y Frecuencias
+        // top_est_2: Clasificación de Variables y Tablas de Frecuencia
         QuizQuestionEntity(
             id = "q_est_2_1",
             topicId = "top_est_2",
-            question = "La variable 'Nivel de satisfacción de un cliente (Bajo, Medio, Alto)' se clasifica como:",
-            optionA = "Cualitativa ordinal",
-            optionB = "Cuantitativa discreta",
-            optionC = "Cualitativa nominal",
-            optionD = "Cuantitativa continua",
+            question = "La variable 'Número de asignaturas reprobadas por un estudiante (0, 1, 2, 3...)' se clasifica como:",
+            optionA = "Cuantitativa discreta",
+            optionB = "Cuantitativa continua",
+            optionC = "Cualitativa ordinal",
+            optionD = "Cualitativa nominal",
             correctOptionIndex = 0,
-            explanation = "Es cualitativa (no numérica en origen) y ordinal porque existe un orden o jerarquía natural evidente entre sus categorías."
+            explanation = "Es cuantitativa porque expresa una cantidad numérica y discreta porque proviene de un conteo de valores enteros sin decimales intermedios."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_2_2",
+            topicId = "top_est_2",
+            question = "¿Cuál de las siguientes variables es un ejemplo de variable Cualitativa Nominal?",
+            optionA = "Estado civil (Soltero, Casado, Viudo, Divorciado)",
+            optionB = "Nivel de satisfacción en una encuesta (Bajo, Medio, Alto)",
+            optionC = "Estatura de una persona en metros",
+            optionD = "Puesto de llegada en una carrera (1°, 2°, 3° lugar)",
+            correctOptionIndex = 0,
+            explanation = "Es cualitativa nominal porque describe una cualidad/categoría sin ningún orden ni jerarquía intrínseca entre ellas."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_2_3",
+            topicId = "top_est_2",
+            question = "Si en una muestra de 50 personas, 15 prefieren el turno mañana, ¿cuál es la frecuencia relativa (hi) y porcentual (hi%) de ese grupo?",
+            optionA = "hi = 0.30 (30%)",
+            optionB = "hi = 0.15 (15%)",
+            optionC = "hi = 3.33 (33.3%)",
+            optionD = "hi = 0.50 (50%)",
+            correctOptionIndex = 0,
+            explanation = "La frecuencia relativa es hi = fi / N = 15 / 50 = 0.30, lo que multiplicado por 100 corresponde al 30%."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_2_4",
+            topicId = "top_est_2",
+            question = "¿Qué representa la 'frecuencia absoluta acumulada' (Fi) de una clase en una tabla de frecuencias?",
+            optionA = "La suma de las frecuencias absolutas desde la primera clase hasta la clase actual",
+            optionB = "El porcentaje total de la muestra",
+            optionC = "El promedio de los datos de esa clase",
+            optionD = "El valor máximo registrado en la muestra",
+            correctOptionIndex = 0,
+            explanation = "Fi acumula el número total de observaciones cuyos valores son menores o iguales al límite superior del intervalo actual."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_2_5",
+            topicId = "top_est_2",
+            question = "¿Cuál es la diferencia fundamental entre una 'Población' y una 'Muestra'?",
+            optionA = "La Población es la totalidad de elementos bajo estudio; la Muestra es un subconjunto representativo seleccionado de la población",
+            optionB = "La Muestra siempre tiene más datos que la Población",
+            optionC = "Población se usa solo en censos de personas y Muestra para animales",
+            optionD = "Son sinónimos intercambiables en estadística",
+            correctOptionIndex = 0,
+            explanation = "Se analiza una muestra para inferir conclusiones sobre toda la población cuando estudiar la población completa resulta costoso o inviable."
         ),
 
-        // top_est_3: Medidas de Tendencia Central
+        // top_est_3: Medidas de Tendencia Central y Posición (Percentiles / Cuartiles)
         QuizQuestionEntity(
             id = "q_est_3_1",
             topicId = "top_est_3",
-            question = "¿Qué medida de tendencia central es la más adecuada cuando el conjunto de datos contiene valores atípicos extremos (outliers)?",
-            optionA = "La Mediana (valor central)",
-            optionB = "La Media Aritmética (promedio)",
-            optionC = "El Coeficiente de Variación",
-            optionD = "La Varianza",
+            question = "En una empresa donde 5 operarios ganan $500.000 y el gerente gana $15.000.000, ¿qué medida representa MEJOR el sueldo típico?",
+            optionA = "La Mediana, porque es robusta e inmune al sesgo de valores extremos (outliers)",
+            optionB = "La Media aritmética, porque utiliza todos los números en la suma",
+            optionC = "La Varianza",
+            optionD = "El Rango total",
             correctOptionIndex = 0,
-            explanation = "La Mediana es robusta ante valores extremos, ya que depende de la posición central de los datos ordenados y no de la magnitud de los extremos."
+            explanation = "La media ($2.916.666) no representa a casi nadie por culpa del valor atípico ($15M); la mediana ($500.000) refleja con exactitud la tendencia central real."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_3_2",
+            topicId = "top_est_3",
+            question = "¿A qué percentil equivale exactamente el Segundo Cuartil (Q2) de un conjunto de datos?",
+            optionA = "Al Percentil 50 (P50) y coincide con la Mediana",
+            optionB = "Al Percentil 25 (P25)",
+            optionC = "Al Percentil 75 (P75)",
+            optionD = "Al Promedio Aritmético",
+            correctOptionIndex = 0,
+            explanation = "El segundo cuartil (Q2) divide la distribución ordenada en dos mitades del 50% cada una, coincidiendo siempre con la Mediana (P50)."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_3_3",
+            topicId = "top_est_3",
+            question = "¿Cómo se calcula el Rango Intercuartílico (IQR) y qué porcentaje central de los datos abarca?",
+            optionA = "IQR = Q3 - Q1, y contiene exactamente el 50% central de las observaciones",
+            optionB = "IQR = Q3 + Q1, y contiene el 75% de los datos",
+            optionC = "IQR = Max - Min, y contiene el 100% de los datos",
+            optionD = "IQR = Media - Mediana, y contiene el 25% de los datos",
+            correctOptionIndex = 0,
+            explanation = "El IQR (Q3 - Q1) mide la dispersión del 50% central de los datos, eliminando la influencia de los valores extremos en los extremos."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_3_4",
+            topicId = "top_est_3",
+            question = "En la regla de Tukey para diagramas de caja (Boxplot), ¿cuándo se considera un valor como atípico (outlier) superior?",
+            optionA = "Cuando su valor es estrictamente mayor que Q3 + 1.5 * IQR",
+            optionB = "Cuando supera a la Media + 1",
+            optionC = "Cuando es mayor que el Percentil 50",
+            optionD = "Cuando es el número más alto de la muestra sin importar su valor",
+            correctOptionIndex = 0,
+            explanation = "El límite superior del bigote en un boxplot es Q3 + 1.5 * IQR; cualquier dato que supere ese umbral se clasifica y grafica como outlier aislado."
         ),
 
-        // top_est_4: Medidas de Dispersión
+        // top_est_4: Medidas de Dispersión y Homogeneidad
         QuizQuestionEntity(
             id = "q_est_4_1",
             topicId = "top_est_4",
-            question = "¿Por qué la Desviación Estándar es más utilizada para interpretar resultados que la Varianza?",
+            question = "¿Por qué la Desviación Estándar (s) es más utilizada para interpretar resultados que la Varianza (s²)?",
             optionA = "Porque se expresa en las MISMAS unidades de medida originales de la variable (al ser la raíz cuadrada de la varianza)",
             optionB = "Porque siempre da un número negativo",
             optionC = "Porque no requiere ordenar los datos",
             optionD = "Porque elimina todos los valores duplicados",
             correctOptionIndex = 0,
-            explanation = "La varianza tiene unidades al cuadrado (ej: metros² o pesos²); la desviación estándar recupera la unidad original (metros o pesos)."
+            explanation = "La varianza eleva las unidades al cuadrado (ej: metros² o pesos²); la desviación estándar recupera la unidad de medida original lineal."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_4_2",
+            topicId = "top_est_4",
+            question = "¿Para qué se utiliza el Coeficiente de Variación (CV = (s / x̄) * 100%) en el análisis estadístico?",
+            optionA = "Para comparar la variabilidad relativa y homogeneidad entre dos o más grupos con diferentes promedios o unidades de medida",
+            optionB = "Para predecir el valor del próximo dato",
+            optionC = "Para transformar datos cualitativos en cuantitativos",
+            optionD = "Para calcular la probabilidad de una distribución normal",
+            correctOptionIndex = 0,
+            explanation = "Al ser una medida porcentual y adimensional, el CV permite determinar qué grupo es más homogéneo (menor CV) independientemente de su escala."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_4_3",
+            topicId = "top_est_4",
+            question = "Al calcular la varianza de una muestra (s²), ¿por qué se divide por (n - 1) en lugar de n?",
+            optionA = "Para aplicar la corrección de Bessel y obtener un estimador insesgado de la varianza poblacional (σ²)",
+            optionB = "Porque se asume que un dato siempre es erróneo",
+            optionC = "Para simplificar el cálculo manual",
+            optionD = "Solo se aplica cuando la muestra tiene más de 100 datos",
+            correctOptionIndex = 0,
+            explanation = "Dividir por n - 1 corrige la subestimación natural que produce calcular la varianza muestral respecto a la media de la muestra."
+        ),
+
+        // top_est_5: Representación Gráfica e Interpretación
+        QuizQuestionEntity(
+            id = "q_est_5_1",
+            topicId = "top_est_5",
+            question = "¿Cuál es la diferencia fundamental entre un Histograma y un Gráfico de Barras?",
+            optionA = "El Histograma representa variables cuantitativas continuas en intervalos contiguos (barras unidas); el Gráfico de Barras representa variables cualitativas o discretas (barras separadas)",
+            optionB = "El Histograma solo usa sectores circulares",
+            optionC = "El Gráfico de Barras es exclusivo para series de tiempo",
+            optionD = "Son idénticos y solo cambia el color de las barras",
+            correctOptionIndex = 0,
+            explanation = "En el histograma no hay espacio entre barras porque representan rangos numéricos continuos (intervalos de clase)."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_5_2",
+            topicId = "top_est_5",
+            question = "En un Diagrama de Caja (Boxplot), ¿qué estadístico representa la línea horizontal o vertical que corta la caja por dentro?",
+            optionA = "La Mediana (Q2)",
+            optionB = "La Media aritmética",
+            optionC = "La Moda",
+            optionD = "La Desviación Estándar",
+            correctOptionIndex = 0,
+            explanation = "Los bordes de la caja son Q1 y Q3, y la línea interior representa el 50% de los datos (la Mediana o Q2)."
+        ),
+        QuizQuestionEntity(
+            id = "q_est_5_3",
+            topicId = "top_est_5",
+            question = "¿Para qué tipo de análisis es especialmente útil un Gráfico de Dispersión (Scatter Plot)?",
+            optionA = "Para evaluar visualmente la relación, tendencia y correlación (lineal, no lineal o nula) entre dos variables cuantitativas",
+            optionB = "Para mostrar porcentajes de una variable cualitativa",
+            optionC = "Para ordenar datos alfabéticamente",
+            optionD = "Para calcular la frecuencia acumulada",
+            correctOptionIndex = 0,
+            explanation = "El gráfico de dispersión grafica pares de datos (X, Y) para identificar si a mayor valor de X aumenta o disminuye Y (correlación)."
         ),
 
         // ══════════════════════════════════════════════════════════════════════════
