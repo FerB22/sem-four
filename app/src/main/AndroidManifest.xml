@@ -9,9 +9,15 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Permiso de notificaciones (Android 13+ / API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Permisos para alarmas exactas de asistencia (+30 min) -->
+    <!-- Permisos para alarmas exactas de asistencia (+30 min) y Pomodoro -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Permisos para ejecución con pantalla apagada, vibración y servicio de primer plano Pomodoro -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".SemFourApplication"
@@ -111,6 +117,24 @@
         <!-- Receiver para disparar la notificación de asistencia a los 30 min -->
         <receiver
             android:name=".notification.AttendanceNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Servicio en primer plano para mantener vivo el Pomodoro con pantalla apagada -->
+        <service
+            android:name=".service.PomodoroTimerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            tools:ignore="ForegroundServicePermission">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Pomodoro study session countdown timer" />
+        </service>
+
+        <!-- Receiver para alarma y sonido de fin de Pomodoro -->
+        <receiver
+            android:name=".service.PomodoroAlarmReceiver"
+            android:enabled="true"
             android:exported="false" />
 
         <!-- Receiver para reprogramar alarmas al encender o reiniciar el teléfono -->

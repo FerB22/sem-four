@@ -1,122 +1,99 @@
 package com.example.semfour.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.semfour.data.local.entity.TopicEntity
 import com.example.semfour.data.repository.StudyRepository
+import com.example.semfour.service.PomodoroManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * ViewModel para la pantalla de sesión de estudio.
- * Gestiona el temporizador Pomodoro / Micro-sesión / Cronómetro libre
+ * Gestiona el temporizador Pomodoro / Micro-sesión / Cronómetro libre en segundo plano
  * y persiste la sesión completada con la calificación SM-2.
  */
 @HiltViewModel
 class StudySessionViewModel @Inject constructor(
     private val studyRepository: StudyRepository,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Recibido desde NavArgs: topicId y sessionType
     val topicId: String = savedStateHandle["topicId"] ?: ""
     val sessionTypeArg: String = savedStateHandle["sessionType"] ?: SessionType.POMODORO.name
 
-    // ── Estado del tema ────────────────────────────────────────────────────────
     private val _topic = MutableStateFlow<TopicEntity?>(null)
     val topic: StateFlow<TopicEntity?> = _topic.asStateFlow()
 
-    // ── Estado del temporizador ────────────────────────────────────────────────
-    private val _timerState = MutableStateFlow<TimerState>(TimerState.Idle)
-    val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
+    private val sessionData = PomodoroManager.sessionData
 
-    private val _secondsRemaining = MutableStateFlow(0)
-    val secondsRemaining: StateFlow<Int> = _secondsRemaining.asStateFlow()
+    val timerState: StateFlow<TimerState> = sessionData.map { it.timerState }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TimerState.Idle)
 
-    private val _secondsElapsed = MutableStateFlow(0)
-    val secondsElapsed: StateFlow<Int> = _secondsElapsed.asStateFlow()
+    val secondsRemaining: StateFlow<Int> = sessionData.map { it.secondsRemaining }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-    private val _sessionType = MutableStateFlow(SessionType.valueOf(sessionTypeArg))
-    val sessionType: StateFlow<SessionType> = _sessionType.asStateFlow()
+    val secondsElapsed: StateFlow<Int> = sessionData.map { it.secondsElapsed }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-    private var timerJob: Job? = null
+    val sessionType: StateFlow<SessionType> = sessionData.map { it.sessionType }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, try { SessionType.valueOf(sessionTypeArg) } catch (_: Exception) { SessionType.POMODORO })
 
     init {
         viewModelScope.launch {
-            studyRepository.getTopicById(topicId)?.let {
-                _topic.value = it
-            }
-            resetTimer()
+            val loadedTopic = studyRepository.getTopicById(topicId)
+            _topic.value = loadedTopic
+            val initialType = try { SessionType.valueOf(sessionTypeArg) } catch (_: Exception) { SessionType.POMODORO }
+            PomodoroManager.initialize(
+                topicId = topicId,
+                topicName = loadedTopic?.nombre ?: "Sesión de Estudio",
+                sessionType = initialType
+            )
         }
     }
 
     fun startTimer() {
-        if (_timerState.value == TimerState.Running) return
-        _timerState.value = TimerState.Running
-
-        val type = _sessionType.value
-        timerJob = viewModelScope.launch {
-            while (true) {
-                delay(1000L)
-                _secondsElapsed.value++
-
-                if (type != SessionType.FREE) {
-                    val remaining = _secondsRemaining.value - 1
-                    _secondsRemaining.value = remaining
-                    if (remaining <= 0) {
-                        _timerState.value = TimerState.Completed
-                        break
-                    }
-                }
-            }
-        }
+        PomodoroManager.start(context)
     }
 
     fun pauseTimer() {
-        timerJob?.cancel()
-        _timerState.value = TimerState.Paused
+        PomodoroManager.pause(context)
     }
 
     fun stopTimer() {
-        timerJob?.cancel()
-        _timerState.value = TimerState.Idle
-        resetTimer()
-    }
-
-    fun resetTimer() {
-        _secondsElapsed.value = 0
-        _secondsRemaining.value = _sessionType.value.durationSeconds
+        PomodoroManager.stop(context)
     }
 
     fun changeSessionType(type: SessionType) {
-        timerJob?.cancel()
-        _sessionType.value = type
-        _timerState.value = TimerState.Idle
-        resetTimer()
+        PomodoroManager.changeSessionType(context, type)
     }
 
     /**
      * Llama al repositorio para persistir la sesión y aplicar SM-2.
-     * Se llama cuando el estudiante entrega su calificación en el diálogo final.
      *
      * @param calificacion Calificación SM-2 del estudiante (0-5)
      */
     fun completarSesion(calificacion: Int) {
-        val topic = _topic.value ?: return
-        val minutos = (_secondsElapsed.value / 60).coerceAtLeast(1)
+        val currentTopic = _topic.value ?: return
+        val currentElapsed = sessionData.value.secondsElapsed
+        val minutos = (currentElapsed / 60).coerceAtLeast(1)
+        val typeName = sessionData.value.sessionType.name
+
+        PomodoroManager.stop(context)
 
         viewModelScope.launch {
             studyRepository.registrarSesion(
                 topicId = topicId,
-                subjectId = topic.subjectId,
+                subjectId = currentTopic.subjectId,
                 durationMinutes = minutos,
                 calificacionSM2 = calificacion,
-                sessionType = _sessionType.value.name
+                sessionType = typeName
             )
         }
     }

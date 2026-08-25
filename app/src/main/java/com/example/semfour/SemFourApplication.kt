@@ -48,21 +48,49 @@ class SemFourApplication : Application(), Configuration.Provider {
 
     private fun createNotificationChannels() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val name = "Recordatorios de Asistencia"
-            val descriptionText = "Notificaciones automáticas 30 minutos después de iniciar cada clase para registrar asistencia"
-            val importance = android.app.NotificationManager.IMPORTANCE_HIGH
-            val channel = android.app.NotificationChannel(CHANNEL_ATTENDANCE, name, importance).apply {
-                description = descriptionText
+            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+
+            // Canal 1: Asistencia
+            val attendanceChannel = android.app.NotificationChannel(
+                CHANNEL_ATTENDANCE,
+                "Recordatorios de Asistencia",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones automáticas 30 minutos después de iniciar cada clase para registrar asistencia"
                 enableVibration(true)
                 enableLights(true)
             }
-            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
-            notificationManager?.createNotificationChannel(channel)
+            notificationManager?.createNotificationChannel(attendanceChannel)
+
+            // Canal 2: Temporizador Pomodoro en curso (Baja prioridad para no emitir pitidos continuos)
+            val pomodoroTimerChannel = android.app.NotificationChannel(
+                CHANNEL_POMODORO_TIMER,
+                "Temporizador Pomodoro Activo",
+                android.app.NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Progreso del temporizador de estudio en segundo plano"
+                setShowBadge(false)
+            }
+            notificationManager?.createNotificationChannel(pomodoroTimerChannel)
+
+            // Canal 3: Alarma de Fin de Pomodoro (Alta prioridad con sonido y vibración)
+            val pomodoroAlarmChannel = android.app.NotificationChannel(
+                CHANNEL_POMODORO_ALARM,
+                "Alarma de Pomodoro Completado",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alarma sonora y vibración al terminar un bloque de estudio o descanso"
+                enableVibration(true)
+                enableLights(true)
+            }
+            notificationManager?.createNotificationChannel(pomodoroAlarmChannel)
         }
     }
 
     companion object {
         const val CHANNEL_ATTENDANCE = "attendance_channel"
+        const val CHANNEL_POMODORO_TIMER = "pomodoro_timer_channel"
+        const val CHANNEL_POMODORO_ALARM = "pomodoro_alarm_channel"
     }
 
     // Hilt + WorkManager
