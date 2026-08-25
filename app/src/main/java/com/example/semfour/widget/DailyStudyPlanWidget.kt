@@ -310,7 +310,7 @@ class DailyStudyPlanWidgetReceiver : GlanceAppWidgetReceiver() {
         val action = intent.action
         if (action == android.content.Intent.ACTION_DATE_CHANGED ||
             action == android.content.Intent.ACTION_TIME_CHANGED ||
-            action == android.content.Intent.ACTION_TIME_SET ||
+            action == android.content.Intent.ACTION_TIME_TICK ||
             action == android.content.Intent.ACTION_TIMEZONE_CHANGED ||
             action == android.content.Intent.ACTION_USER_PRESENT ||
             action == android.content.Intent.ACTION_SCREEN_ON ||
